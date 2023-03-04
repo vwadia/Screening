@@ -1,0 +1,255 @@
+
+% This script loads in all IT cells ever recorded
+% loops through them, sets paths and grabs the correct order and events for the session
+% makes the psths and then compute response latency and visual responsivity
+
+%% TAKEAWAY
+% There are many more sigRamp cells if one uses sel latency instead of resp latency
+% ~121 vs ~105
+
+% if you use fc7 post relu you get the most consistent answers
+% 120 sig ramp (sel resp) vs 103-105 (vis resp)
+
+
+
+%% setpaths and load in IT cells
+
+setDiskPaths
+
+% diskPath = 'Z:\LabUsers\vwadia\SUAnalysis';
+
+% need to do everything from the server - this address is the same for
+% connection server from lab desktop and computer at Cedars
+addpath(genpath('osortTextUI'));
+addpath(genpath('ObjectSpace'));
+addpath(genpath('synthetic_face_generator'));
+
+%%
+load([diskPath filesep 'Object_Screening' filesep 'AllITCells_500stim_Scrn.mat'])
+
+%% set up orders
+
+imageIDs = [1:500]';
+order1 = repelem(imageIDs, 6);
+order2 = repelem(imageIDs, 4);
+catOrd = {};
+% make cat labels 
+anovaType = 'CategoryObject';
+faceInds = 134:210;
+objInds = [85:133 236:255 283:289 291:356 409:500]; % chnged to include 290 in text vwadia march 2022
+textInds = [264:282 290 400:408];
+vegInds = [211:235 357:399];
+animInds = [1:84 256:263];
+
+for i = 1:2
+    
+    if i == 1
+        order = order1; % 3000 elements
+    else
+        order = order2; % 2000 elements
+    end
+    
+    catOrder = zeros(length(order), 1);
+    catOrder(ismember(order, faceInds)) = 1;
+    catOrder(ismember(order, textInds)) = 2;
+    catOrder(ismember(order, vegInds)) = 3;
+    catOrder(ismember(order, animInds)) = 4;
+    catOrder(ismember(order, objInds)) = 5;
+    
+    catOrd{i} = catOrder;
+end
+
+%% compute new responses 
+
+
+basicMethod = 0; 
+compResponses = cell(length(strctCells), 3);
+
+for cellIndex = l(strctCells)
+    
+    if strcmp(strctCells(cellIndex).SessionID, 'P71CS_Fast')
+        labels = catOrd{1};
+        timelimits = [-0.17, 0.33];
+        stimOffDur = 166.6250;
+        stimDur = 166.6250;
+        sortedOrder = order1;
+    else
+        labels = catOrd{2};
+        timelimits = [-0.13, 0.53];
+        stimOffDur = 133.4680;
+        stimDur = 266.6250;
+        sortedOrder = order2;
+    end
+    
+    
+    
+    [respLat, max_group] = Utilities.computeResponseLatency(psths(cellIndex, :), labels, timelimits,...
+        stimOffDur, stimDur, basicMethod);
+  
+    endRas = size(psths{cellIndex, 1}, 2);
+    if respLat ~= 0
+        %         respLat = 100 + (-screeningData.timelimits(1)*1e3); % choose this manually
+        windowLength = floor(stimDur);
+        windowBegin = respLat;
+        windowEnd = windowBegin+windowLength;
+        if windowEnd > endRas
+            windowEnd = endRas;
+        end
+       
+        
+        for i = l(imageIDs)
+            stimRaster = psths{cellIndex, 1}(find(sortedOrder == imageIDs(i)), windowBegin:windowEnd);
+            compResponses{cellIndex, 1}(i, 1) = mean(mean(stimRaster))*1e3; % note the 1000x multiplcation
+        end
+        
+        compResponses{cellIndex, 2} = respLat - (-timelimits(1)*1e3);
+        compResponses{cellIndex, 3} = strctCells(cellIndex).Name;
+        if exist('max_group')
+            compResponses{cellIndex, 4} = max_group;
+        end
+        respLat = 0; % empty it so it gets assigned again if present
+    end
+end
+
+
+
+
+%% compute pval of ramp
+
+load([diskPath filesep 'ObjectSpace' filesep '500Stimuli' filesep 'params_alexnet_comparison_500Stimuli.mat']); % will create params 1x4 cell
+par = params;
+
+% load([diskPath filesep 'ObjectSpace' filesep '500Stimuli' filesep 'scores_alexnet_comparison.mat']); % will make cell array with fc6 fc6 after relu fc7 fc7 after relu
+
+
+% params = score(:, 1:50);
+
+netCells = [];
+tic
+for netwkNum = 1%:4
+    
+    
+    params = par{netwkNum}(:, 1:50);
+    
+    pvalRamp = {};
+
+    
+    
+    for i = 2%1:2
+        
+        strctCells_sigRamp = strctCells;
+        
+        if i == 1
+            index = cellfun(@isempty, responses);
+            resp = responses;
+            resp(index(:, 1), :) = [];
+            strctCells_sigRamp(index(:, 1)) = [];
+        else
+            index = cellfun(@isempty, compResponses);
+            resp = compResponses;
+            resp(index(:, 1), :) = [];
+            strctCells_sigRamp(index(:, 1)) = [];
+        end
+        
+        options.screenType = 'Object';
+        
+        for cellIndex = l(strctCells_sigRamp)
+            
+            options.ind_train = imageIDs; % use all objects to calculate STA
+            [p, pRat] = Utilities.ObjectSpace.linearity_measure_STA(resp{cellIndex, 1}, params, options);
+            pvalRamp{cellIndex, i} = p;
+            
+        end
+        
+        pvals = cell2mat(pvalRamp(:, i));
+        temp = [];
+        for idx = l(pvals)
+            if pvals(idx) > 0.01
+                temp = [temp cellIndex];
+            end
+            
+        end
+        disp(length(strctCells_sigRamp) - length(temp));
+        netCells(netwkNum, i) = length(strctCells_sigRamp) - length(temp);
+        
+    end
+end
+toc
+
+%% carving up cells by category response
+
+% get rid of non-responsive units
+index = cellfun(@isempty, compResponses);
+compResponses(index(:, 1), :) = [];
+psths(index(:, 1), :) = [];
+strctCells(index(:, 1)) = [];
+
+cR = compResponses;
+sig_cell = pvals < 0.014;
+cR = compResponses(sig_cell, :);
+strctCells_cR = strctCells(sig_cell);
+strctCells_all = strctCells;
+responses_cR = 
+
+assert(isequal(responses_cR, cR));
+psths_cR = psths(sig_cell);
+% faceCells_ids = find(cell2mat(cR(:, 4)) == 1);
+% textCells_ids = find(cell2mat(cR(:, 4)) == 2);
+% vegCells_ids = find(cell2mat(cR(:, 4)) == 3);
+% animCells_ids = find(cell2mat(cR(:, 4)) == 4);
+% objCells_ids = find(cell2mat(cR(:, 4)) == 5);
+% 
+% 
+% faceCells = cR(faceCells_ids, :); 
+% textCells = cR(textCells_ids, :); 
+% vegCells = cR(vegCells_ids, :); 
+% animCells = cR(animCells_ids, :); 
+% objCells = cR(objCells_ids, :); 
+% 
+% save([diskPath filesep 'Object_Screening' filesep 'ITResponses_SigRamp_SplitByCategory_500Stimuli'], 'faceCells', 'textCells', 'vegCells', 'animCells', 'objCells')
+
+for cat = 1:5
+    
+    ids = find(cell2mat(cR(:, 4)) == cat);
+    strctCells = strctCells_cR(ids);
+    responses = responses_cR(ids);
+    psths = psths_cR(ids);
+    
+    switch cat 
+        case 1
+            group = 'faceCells';            
+        case 2
+            group = 'textCells';           
+        case 3
+            group = 'vegCells';            
+        case 4
+            group = 'animCells';           
+        case 5
+            group = 'objCells';           
+    end
+    
+    save([diskPath filesep 'Object_Screening' filesep 'splitByCategory' filesep ['IT' group '_SigRamp_500Stimuli.mat']], 'strctCells', 'responses', 'psths')
+    
+end
+
+%% scatterplot comparison of response latancies
+% % 
+% index = cellfun(@isempty, compResponses);
+% rL_resp = cell2mat(compResponses(:, 2));
+% rL_resp(index(:, 1), 1) = 0; % only for plotting
+% disp(sum(index(:, 1)))
+% 
+% 
+% index = cellfun(@isempty, responses);
+% rL_sel = cell2mat(compResponses(:, 2));
+% rL_sel(index(:, 1), 1) = 0; % only for plotting
+% disp(sum(index(:, 1)))
+% 
+% f = figure; clf;
+% hold on
+% scatter(1:length(strctCells), rL_resp)
+% 
+% scatter(1:length(strctCells), rL_sel)
+% 
+% 
+
