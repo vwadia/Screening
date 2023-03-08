@@ -30,17 +30,31 @@ strctCELL = strctCELL';
 timelimits = [-0.17 0.53]; %sec
 %% separate cells by session (start with P73)
 
-sessCells = cellfun(@(x) strcmp(x, 'P73CS_ParamObj'), strctCELL(:, 8), 'UniformOutput', false);
+% sessCells = cellfun(@(x) strcmp(x, 'P73CS_ParamObj'), strctCELL(:, 8), 'UniformOutput', false);
+% 
+% sessCells = cell2mat(sessCells);
+% 
+% strctCells = strctCells(sessCells);
+% psths = psths(sessCells, :);
+% responses = responses(sessCells, :);
 
-sessCells = cell2mat(sessCells);
+%% for response latency testing - cells with weird psths that this alg should get 
 
-strctCells = strctCells(sessCells);
-psths = psths(sessCells, :);
-responses = responses(sessCells, :);
+weirdCells = [2150 4516 949 1056 1383 661 713 1905 204 1755 3178 625 651 1036 1981 ];
+allCells = cell2mat(strctCELL(:, 1));
+
+weirdIds = find(allCells == weirdCells);
+weirdIds = mod(weirdIds, length(strctCells));
+
+weirdIds(weirdIds == 0) = length(strctCells); 
+
+strctCells = strctCells(weirdIds); 
+psths = psths(weirdIds, :);
+responses = responses(weirdIds, :);
 
 %%
 % Open questions:
-%     What is anchor?
+%     What is anchor? - used to compute cISI which is fed into poisscdf
 %     What is the best time window to use for most accurate burst detection?
 
 % Notes:
@@ -72,7 +86,7 @@ for it = 1:size(exCell, 1)
     endT = 170+267;
 %     [b, e, s] = Utilities.p_burst(times, startT, endT, 0); 
 
-%%     can manually input an average spike rate - per trial works best so far
+%     can manually input an average spike rate - per trial works best so far
     avgSpikRate = sum(times > -timelimits(1)*1e3 & times < -timelimits(1)*1e3+50)/50; % baseline FR per trial
 %     avgSpikRate = sum(times > -timelimits(1)*1e3)/-timelimits(1)*1e3; % baseline FR per trial
     [b, e, s] = Utilities.p_burst(times, startT, endT, 0, avgSpikRate); 
@@ -104,4 +118,5 @@ adj{cellIndex, 1} = adjOnTimes;
 % train(EOB)
 end
 
-respLat = cellfun(@(x) mean(x), adj, 'UniformOutput', false);
+respLat(:, 1) = cellfun(@(x) mean(x), adj, 'UniformOutput', false);
+respLat(:, 2) = cellfun(@(x) std(x), adj, 'UniformOutput', false);
