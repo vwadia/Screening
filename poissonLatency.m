@@ -40,17 +40,17 @@ timelimits = [-0.17 0.53]; %sec
 
 %% for response latency testing - cells with weird psths that this alg should get 
 
-weirdCells = [2150 4516 949 1056 1383 661 713 1905 204 1755 3178 625 651 1036 1981 ];
-allCells = cell2mat(strctCELL(:, 1));
-
-weirdIds = find(allCells == weirdCells);
-weirdIds = mod(weirdIds, length(strctCells));
-
-weirdIds(weirdIds == 0) = length(strctCells); 
-
-strctCells = strctCells(weirdIds); 
-psths = psths(weirdIds, :);
-responses = responses(weirdIds, :);
+% weirdCells = [2150 4516 949 1056 1383 661 713 1905 204 1755 3178 625 651 1036 1981 ];
+% allCells = cell2mat(strctCELL(:, 1));
+% 
+% weirdIds = find(allCells == weirdCells);
+% weirdIds = mod(weirdIds, length(strctCells));
+% 
+% weirdIds(weirdIds == 0) = length(strctCells); 
+% 
+% strctCells = strctCells(weirdIds); 
+% psths = psths(weirdIds, :);
+% responses = responses(weirdIds, :);
 
 %%
 % Open questions:
@@ -88,7 +88,7 @@ for it = 1:size(exCell, 1)
 
 %     can manually input an average spike rate - per trial works best so far
     avgSpikRate = sum(times > -timelimits(1)*1e3 & times < -timelimits(1)*1e3+50)/50; % baseline FR per trial
-%     avgSpikRate = sum(times > -timelimits(1)*1e3)/-timelimits(1)*1e3; % baseline FR per trial
+%     avgSpikRate = sum(times < -timelimits(1)*1e3)/-timelimits(1)*1e3; % baseline FR per trial
     [b, e, s] = Utilities.p_burst(times, startT, endT, 0, avgSpikRate); 
     
     if ~isempty(b)   
