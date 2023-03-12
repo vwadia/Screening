@@ -151,10 +151,10 @@ addpath(genpath('synthetic_face_generator'));
 % log = [basePath filesep 'P79CS_3_Screening_2022-04-03_09-24-54.txt'];
 % FFAChansOnly = 0;
 
-basePath = [diskPath filesep 'Recall_Task' filesep 'P79CS' filesep 'ReScreenRecall_Session_2_20220403'];
-taskStruct = load([basePath filesep 'P79CS_ReScreen_3_Sub_4_Block']); patID = 'P79CS';
-log = [basePath filesep 'P79CS_ReScreen_3_Screening_2022-04-03_13-03-07.txt'];
-FFAChansOnly = 0;
+% basePath = [diskPath filesep 'Recall_Task' filesep 'P79CS' filesep 'ReScreenRecall_Session_2_20220403'];
+% taskStruct = load([basePath filesep 'P79CS_ReScreen_3_Sub_4_Block']); patID = 'P79CS';
+% log = [basePath filesep 'P79CS_ReScreen_3_Screening_2022-04-03_13-03-07.txt'];
+% FFAChansOnly = 0;
 
 % basePath = [diskPath filesep 'Recall_Task' filesep 'P79CS' filesep 'RecallScreening_Session_3_20220405'];
 % taskStruct = load([basePath filesep 'P79CS_4_Sub_4_Block']); patID = 'P79CS';
@@ -222,10 +222,10 @@ FFAChansOnly = 0;
 % log = [basePath filesep 'P82CS_1_Screening_2023-01-11_11-22-36.txt'];
 % FFAChansOnly = 1;
 
-% basePath = [diskPath filesep 'Object_Screening' filesep 'P82CS' filesep 'ClosedLoopScreening_Session_1_20230115'];
-% taskStruct = load([basePath filesep 'P82CS_CL_1_Sub_4_Block']); patID = 'P82CS';
-% log = [basePath filesep 'P82CS_CL_1_Screening_2023-01-15_13-01-44.txt'];
-% FFAChansOnly = 1;
+basePath = [diskPath filesep 'Object_Screening' filesep 'P82CS' filesep 'ClosedLoopScreening_Session_1_20230115'];
+taskStruct = load([basePath filesep 'P82CS_CL_1_Sub_4_Block']); patID = 'P82CS';
+log = [basePath filesep 'P82CS_CL_1_Screening_2023-01-15_13-01-44.txt'];
+FFAChansOnly = 1;
 % 
 % basePath = [diskPath filesep 'Object_Screening' filesep 'P82CS' filesep 'ClosedLoopReScreen_Session_1_20230115'];
 % taskStruct = load([basePath filesep 'P82CS_CLReScreen_Sub_4_Block']); patID = 'P82CS';

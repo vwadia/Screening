@@ -19,7 +19,7 @@ taskPath = 'Object_Screening';
 
 % need to do everything from the server - this address is the same for
 % connection server from lab desktop and computer at Cedars
-addpath(genpath('osortTextUI'));
+addpath(genpath(['Code' filesep 'osortTextUI']));
 addpath(genpath('ObjectSpace'));
 % addpath(genpath('synthetic_face_generator'));
 
