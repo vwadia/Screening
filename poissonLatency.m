@@ -106,8 +106,8 @@ for it = 1:size(exCell, 1)
 %     [b, e, s] = Utilities.p_burst(times, startT, endT, 0); 
 
 %     can manually input an average spike rate - per trial works best so far
-%     avgSpikRate = sum(times > -timelimits(1)*1e3 & times < -timelimits(1)*1e3+50)/50; % baseline FR per trial
-    avgSpikRate = sum(times > -timelimits(1)*1e3-100 & times < -timelimits(1)*1e3)/100; % baseline FR per trial
+    avgSpikRate = sum(times > -timelimits(1)*1e3 & times < -timelimits(1)*1e3+50)/50; % baseline FR per trial
+%     avgSpikRate = sum(times > -timelimits(1)*1e3-100 & times < -timelimits(1)*1e3)/100; % baseline FR per trial
     [b, e, s] = Utilities.p_burst(times, startT, endT, 0, avgSpikRate); 
     
     if ~isempty(b)   
@@ -141,7 +141,27 @@ respLat(:, 1) = cellfun(@(x) mean(x), adj, 'UniformOutput', false);
 respLat(:, 2) = cellfun(@(x) std(x), adj, 'UniformOutput', false);
 
 
+%% 
+rL = cell2mat(respLat(:, 1));
+rLStd = cell2mat(respLat(:, 2));
+
+% lsidx = find(rLStd < prctile(rLStd, 10));
+lsidx = find(rLStd == 0);
+hsidx = find(rLStd > prctile(rLStd, 99));
+nanidx = find(isnan(rLStd));
+
+lowStdCells = strctCells(lsidx);
+highStdCells = strctCells(hsidx);
+nanCells = strctCells(nanidx);
+% restCells = strctCells(setdiff(1:length(strctCells), [lsidx; hsidx; nanidx]'));
+% nonRespCells = cat(2, lowStdCells, highStdCells, nanCells);
+
+restCells = strctCells(setdiff(1:length(strctCells), [lsidx; nanidx]'));
+nonRespCells = cat(2, lowStdCells, nanCells);
+respCells = restCells;
+
 %% using p_burst with classwise threshold 
+%% Look for classwise threshold crossing across time 
 
 num_std_dvs = 2.5;
 
@@ -188,6 +208,7 @@ for i = 1:3
 end
 
 
+respComp = zeros(length(strctCells), 1);
 
 for cellIndex = 1:length(strctCells)
 exCell = psths{cellIndex, 1}; % nice animal cell psth
@@ -216,77 +237,147 @@ end
 
 ctr = 1;
 threshCross = false;
+offset = 50;
+binsize = 25;
+stepsize = 25;
+alpha = 0.01;
+
+
+b_psth = exCell(:, -timelimits(1)*1e3:-timelimits(1)*1e3+50); % cell baseline Raster
+m_b_psth = mean(b_psth, 1);
+
+big_t_psth = exCell(:, -timelimits(1)*1e3+50:-timelimits(1)*1e3+ceil(stimDur));
+% windowBegin = -timelimits(1)*1e3+50;
+% windowEnd = windowBegin+size(big_t_psth, 2)-binsize;
+
+numBins = length(-timelimits(1)*1e3+stepsize:stepsize:size(big_t_psth, 2)-binsize);
+p_sel = nan(numBins, 1);      
+lbins = [];
 for lb = unique(labels')    
-    b_psth = exCell(find(labels == lb), -timelimits(1)*1e3:-timelimits(1)*1e3+50);
-    t_psth = exCell(find(labels == lb), -timelimits(1)*1e3+50:-timelimits(1)*1e3+ceil(stimDur));
     
-    if mean(mean(t_psth)) >= mean(mean(b_psth)) + num_std_dvs*std(mean(b_psth))
-        threshCross = true;
+%     b_psth = exCell(find(labels == lb), -timelimits(1)*1e3:-timelimits(1)*1e3+50); % cell baseline Raster
+%     m_b_psth = mean(b_psth, 2);
+    
+    t_psth = exCell(find(labels == lb), -timelimits(1)*1e3+50:-timelimits(1)*1e3+ceil(stimDur));
+    binCtr = 1;
+    for window = 1:stepsize:size(t_psth, 2) % do stepsize = binsize for now to avoid mult comparisons
+        
+        if window+binsize > size(t_psth, 2)
+            schmol_t_psth = t_psth(:, window:end);           
+        else
+            schmol_t_psth = t_psth(:, window:window+binsize);
+        end
+        [p_sel(binCtr), ~] = ranksum(m_b_psth, mean(schmol_t_psth, 1));
+        
+         if p_sel(binCtr) < alpha
+             lbins(end+1) = -timelimits(1)*1e3+50+window;
+         end
+         binCtr = binCtr + 1;
+
     end
-    ctr = ctr+1;
+    t = lbins; % list of bins
+    
+    N = 2; %ceil(binsize/stepsize); % these many consecutive bins have to be significant
+    x = diff(t)==stepsize;
+    f = find([false,x]~=[x,false]);
+    g = find(f(2:2:end)-f(1:2:end-1)>=N,1,'first');
+    if ~isempty(t(f(2*g-1)))
+        respComp(cellIndex) = 1;
+        break
+    end
+
 end
+
+
+% % Should do  test between individual category rasters and cell baseline. 
+% multMatrix = Utilities.slidingWindowANOVA(exCell, labels, -timelimits(1)*1e3+offset, alpha, 0, [], binSize, stepsize, 2);
+% if ~isempty(multMatrix)
+%     
+%     % old way
+%     %                     respLat = multMatrix{g, 2}; % the first timewindow the groups are significantly different
+%     
+%     
+%     t = cell2mat(multMatrix(:, 2))'; % list of bins
+%     
+%     N = ceil(25/stepsize); % these many consecutive bins have to be significant
+%     x = diff(t)==stepsize;
+%     f = find([false,x]~=[x,false]);
+%     g = find(f(2:2:end)-f(1:2:end-1)>=N,1,'first');
+%     if ~isempty(t(f(2*g-1)))
+% %         respLat = multMatrix{f(2*g-1), 2}; % the first timewindow the groups start to be different for a while
+%         threshCross = 1; 
+%         respComp(cellIndex) = 1;
+%     end
+%     
+%     
+% end
+
 
 % [BOB, EOB, SOB]=p_burst(InTrain, StartT, StopT,doDisplay,varargin)
 % [m1, p1] = max(sum(exCell, 2));
-BOB = zeros(1, size(exCell, 1));
-EOB = zeros(1, size(exCell, 1));
-SOB = zeros(1, size(exCell, 1));
-stamps = zeros(size(exCell, 1), 3);
-onTimes = [];
+% BOB = zeros(1, size(exCell, 1));
+% EOB = zeros(1, size(exCell, 1));
+% SOB = zeros(1, size(exCell, 1));
+% stamps = zeros(size(exCell, 1), 3);
+% onTimes = [];
 
 
-if threshCross
+% if threshCross
+% 
+% for it = 1:size(exCell, 1)
+%     
+%    
+%     % spike timestamps - note that function gets rid of negative numbers
+%     times = find(exCell(it, :) == 1);
+%     
+%     % how does one assess significance? - it's inside the function
+%     % how does one include a given cell's baseline? - start and stop time are used to compute average FR
+%     % note start time can't be 0
+%     startT = -timelimits(1)*1e3+50;
+%     endT = (-timelimits(1)*1e3)+stimDur;
+% %     [b, e, s] = Utilities.p_burst(times, startT, endT, 0); 
+% 
+% %     can manually input an average spike rate - per trial works best so far
+% %     avgSpikRate = sum(times > -timelimits(1)*1e3 & times < -timelimits(1)*1e3+50)/50; % baseline FR per trial
+%     avgSpikRate = sum(times > -timelimits(1)*1e3-100 & times < -timelimits(1)*1e3)/100; % baseline FR per trial
+%     [b, e, s] = Utilities.p_burst(times, startT, endT, 0, avgSpikRate); 
+%     
+%     if ~isempty(b)   
+% %         train = times(times > -timelimits(1)*1e3);
+%         train = times;%(times > -timelimits(1)*1e3);
+%         
+%         % in cases with multiple burtst take one with max surprise
+%         if length(s) > 1
+%             [~, pos] = max(s);
+%             stamps(it, 1) = train(b(pos));
+%             stamps(it, 2) = train(e(pos));
+%             stamps(it, 3) = s(pos);
+%         else % else take the first 
+%             stamps(it, 1) = train(b);
+%             stamps(it, 2) = train(e);
+%             stamps(it, 3) = s;
+%         end
+%     end
+% end
+% 
+% numTrials(cellIndex, 1) = sum(stamps(:, 1) ~= 0);
+% onTimes = stamps(find(stamps(:, 1) ~= 0), 1);
+% adjOnTimes = onTimes(onTimes > 170);
+% adjOnTimes = adjOnTimes - 170;
+% adj{cellIndex, 1} = adjOnTimes;
+% % train(BOB)
+% % train(EOB)
+% end
 
-for it = 1:size(exCell, 1)
-    
-   
-    % spike timestamps - note that function gets rid of negative numbers
-    times = find(exCell(it, :) == 1);
-    
-    % how does one assess significance? - it's inside the function
-    % how does one include a given cell's baseline? - start and stop time are used to compute average FR
-    % note start time can't be 0
-    startT = -timelimits(1)*1e3+50;
-    endT = (-timelimits(1)*1e3)+stimDur;
-%     [b, e, s] = Utilities.p_burst(times, startT, endT, 0); 
-
-%     can manually input an average spike rate - per trial works best so far
-%     avgSpikRate = sum(times > -timelimits(1)*1e3 & times < -timelimits(1)*1e3+50)/50; % baseline FR per trial
-    avgSpikRate = sum(times > -timelimits(1)*1e3-100 & times < -timelimits(1)*1e3)/100; % baseline FR per trial
-    [b, e, s] = Utilities.p_burst(times, startT, endT, 0, avgSpikRate); 
-    
-    if ~isempty(b)   
-%         train = times(times > -timelimits(1)*1e3);
-        train = times;%(times > -timelimits(1)*1e3);
-        
-        % in cases with multiple burtst take one with max surprise
-        if length(s) > 1
-            [~, pos] = max(s);
-            stamps(it, 1) = train(b(pos));
-            stamps(it, 2) = train(e(pos));
-            stamps(it, 3) = s(pos);
-        else % else take the first 
-            stamps(it, 1) = train(b);
-            stamps(it, 2) = train(e);
-            stamps(it, 3) = s;
-        end
-    end
 end
 
-numTrials(cellIndex, 1) = sum(stamps(:, 1) ~= 0);
-onTimes = stamps(find(stamps(:, 1) ~= 0), 1);
-adjOnTimes = onTimes(onTimes > 170);
-adjOnTimes = adjOnTimes - 170;
-adj{cellIndex, 1} = adjOnTimes;
-% train(BOB)
-% train(EOB)
-end
+% respLat(:, 1) = cellfun(@(x) mean(x), adj, 'UniformOutput', false);
+% respLat(:, 2) = cellfun(@(x) std(x), adj, 'UniformOutput', false);
 
-end
-
-respLat(:, 1) = cellfun(@(x) mean(x), adj, 'UniformOutput', false);
-respLat(:, 2) = cellfun(@(x) std(x), adj, 'UniformOutput', false);
-
+nonRespIds = find(respComp == 0);
+respIds = setdiff([1:length(strctCells)], nonRespIds);
+nonRespCells = strctCells(nonRespIds); % 48  w/ 20 and 8, 70 w/ 25 and 10, 62 w/ 25 and 8
+respCells = strctCells(respIds); % 362 w/ 20 and 8, 340 w/ 25 and 10, 348 w/ 25 and 8
 
 
 %% using p_burst with individual stim threshold
@@ -339,8 +430,10 @@ end
 ctr = 1;
 threshCross = false;
 
-m_b_psth(1, 1) = mean(mean(exCell(:, -timelimits(1)*1e3-100:-timelimits(1)*1e3)));
-m_b_psth(1, 2) = std(mean(exCell(:, -timelimits(1)*1e3-100:-timelimits(1)*1e3)));
+m_b_psth(1, 1) = mean(mean(exCell(:, -timelimits(1)*1e3:-timelimits(1)*1e3+50)));
+m_b_psth(1, 2) = std(mean(exCell(:, -timelimits(1)*1e3:-timelimits(1)*1e3+50)));
+% m_b_psth(1, 1) = mean(mean(exCell(:, -timelimits(1)*1e3-50:-timelimits(1)*1e3)));
+% m_b_psth(1, 2) = std(mean(exCell(:, -timelimits(1)*1e3-50:-timelimits(1)*1e3)));
 
 % m_b_psth = nan(length(unique(labels)), 2);
 m_t_psth = nan(length(unique(labels)), 1);
@@ -374,61 +467,39 @@ respComp{cellIndex} =(m_t_psth - m_b_psth(1, 1))./m_b_psth(1, 2);
 end
 
 postr = cellfun(@(x) sum(x > 3), respComp, 'UniformOutput', false)';
-bothtr = cellfun(@(x) sum(abs(x) > 2.5), respComp, 'UniformOutput', false)'; % score cutoff 20?
+bothtr = cellfun(@(x) sum(abs(x) > 2.5), respComp, 'UniformOutput', false)'; % 3 is too restrictive here you miss lots of good cells 
 maxtr = cellfun(@(x) max(x), respComp, 'UniformOutput', false)'; % but saved by good score here (8)?
 absmaxtr = cellfun(@(x) max(abs(x)), respComp, 'UniformOutput', false)';
 
 % n_respComp = nansum(respComp, 1);
 % respLat(:, 1) = cellfun(@(x) mean(x), adj, 'UniformOutput', false);
 % respLat(:, 2) = cellfun(@(x) std(x), adj, 'UniformOutput', false);
-bt = find(cell2mat(bothtr) < 20);
-mt = find(cell2mat(absmaxtr) < 8);
+
+%%
+bt = find(cell2mat(bothtr) < 25);
+mt = find(cell2mat(absmaxtr) < 10);
 
 nonRespIds = intersect(bt, mt);
 respIds = setdiff([1:length(strctCells)], nonRespIds);
-nonRespCells = strctCells(nonRespIds);
-respCells = strctCells(respIds);
+nonRespCells = strctCells(nonRespIds); % 48  w/ 20 and 8, 70 w/ 25 and 10, 62 w/ 25 and 8
+respCells = strctCells(respIds); % 362 w/ 20 and 8, 340 w/ 25 and 10, 348 w/ 25 and 8
 
 %% copy to new fodler
 
-% outDir = [diskPath filesep 'Object_Screening' filesep 'forPaper' filesep 'AllCells' filesep 'RLTesting' filesep 'NonRespCells'];
-% if ~exist(outDir, 'dir')
-%     mkdir(outDir)
-% end
-% 
-% ims = Utilities.readInFiles([diskPath filesep 'Object_Screening' filesep 'forPaper' filesep 'AllCells' filesep 'SigandNonSig_Combined'], 'png');
-% fileNum = nan(length(nonRespCells), 1);
-% allIds = [1:length(ims)]';
-% 
-% for cIdx = 1:length(nonRespCells)
-%     
-%     ftoFind = [nonRespCells(cIdx).brainArea '_' num2str(nonRespCells(cIdx).ChannelNumber) '_' num2str(nonRespCells(cIdx).Name) '_1.png'];
-%     
-%     fileNum(cIdx) = structfind(ims, 'name', ftoFind);
-%     
-%     ftoMove = [ims(fileNum(cIdx)).folder filesep ims(fileNum(cIdx)).name];
-%     copyfile(ftoMove, [outDir filesep ims(fileNum(cIdx)).name]);
-%     
-% end
-% 
-% outDir = [diskPath filesep 'Object_Screening' filesep 'forPaper' filesep 'AllCells' filesep 'RLTesting'];
-% 
-% rest = setdiff(allIds, fileNum);
-% for cIdx = 1:length(rest)
-%     
-%     ftoMove = [ims(rest(cIdx)).folder filesep ims(rest(cIdx)).name];
-% 
-%     copyfile(ftoMove, [outDir filesep ims(rest(cIdx)).name]);
-% 
-% end
-outDir = [diskPath filesep 'Object_Screening' filesep 'forPaper' filesep 'AllCells' filesep 'RLTesting' filesep 'Maybe'];
+
+outDir = [diskPath filesep 'Object_Screening' filesep 'forPaper' filesep 'AllCells' filesep 'RLTesting' filesep 'NonRespCells'];
 if ~exist(outDir, 'dir')
     mkdir(outDir)
 end
-for cIdx = 1:length(maybeNRS)
+
+ims = Utilities.readInFiles([diskPath filesep 'Object_Screening' filesep 'forPaper' filesep 'AllCells' filesep 'SigandNonSig_Combined'], 'png');
+fileNum = nan(length(nonRespCells), 1);
+allIds = [1:length(ims)]';
+
+for cIdx = 1:length(nonRespCells)
     
-    ftoFind = [maybeNRS(cIdx).brainArea '_' num2str(maybeNRS(cIdx).ChannelNumber) '_' num2str(maybeNRS(cIdx).Name) '_1.png'];
-     
+    ftoFind = [nonRespCells(cIdx).brainArea '_' num2str(nonRespCells(cIdx).ChannelNumber) '_' num2str(nonRespCells(cIdx).Name) '_1.png'];
+    
     fileNum(cIdx) = structfind(ims, 'name', ftoFind);
     
     ftoMove = [ims(fileNum(cIdx)).folder filesep ims(fileNum(cIdx)).name];
@@ -436,6 +507,33 @@ for cIdx = 1:length(maybeNRS)
     
 end
 
+outDir = [diskPath filesep 'Object_Screening' filesep 'forPaper' filesep 'AllCells' filesep 'RLTesting'];
+
+rest = setdiff(allIds, fileNum);
+for cIdx = 1:length(rest)
+    
+    ftoMove = [ims(rest(cIdx)).folder filesep ims(rest(cIdx)).name];
+
+    copyfile(ftoMove, [outDir filesep ims(rest(cIdx)).name]);
+
+end
+
+
+% outDir = [diskPath filesep 'Object_Screening' filesep 'forPaper' filesep 'AllCells' filesep 'RLTesting' filesep 'Maybe'];
+% if ~exist(outDir, 'dir')
+%     mkdir(outDir)
+% end
+% for cIdx = 1:length(maybeNRS)
+%     
+%     ftoFind = [maybeNRS(cIdx).brainArea '_' num2str(maybeNRS(cIdx).ChannelNumber) '_' num2str(maybeNRS(cIdx).Name) '_1.png'];
+%      
+%     fileNum(cIdx) = structfind(ims, 'name', ftoFind);
+%     
+%     ftoMove = [ims(fileNum(cIdx)).folder filesep ims(fileNum(cIdx)).name];
+%     copyfile(ftoMove, [outDir filesep ims(fileNum(cIdx)).name]);
+%     
+% end
+% 
 %% consistency of respLat b/w stim
 
 
