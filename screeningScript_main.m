@@ -7,14 +7,8 @@
 %% paths to stuff and extract cells
 setDiskPaths
 
-% diskPath = 'Z:\LabUsers\vwadia\SUAnalysis';
 
-% need to do everything from the server - this address is the same for
-% connection server from lab desktop and computer at Cedars
-% cd('Z:\LabUsers\vwadia\SUAnalysis');
-addpath(genpath('osortTextUI'));
-% addpath(genpath('Jan_Sternberg_Screening_Data')); % for spike extracion fcuntinos
-% addpath(genpath('helpers'));
+addpath(genpath([diskPath filesep 'Code' filesep 'osortTextUI']));
 addpath(genpath('ObjectSpace'));
 addpath(genpath('synthetic_face_generator'));
 
@@ -211,22 +205,22 @@ addpath(genpath('synthetic_face_generator'));
 % log = [basePath filesep 'P81CS_AM_Screening_2022-10-30_09-32-21.txt'];
 % FFAChansOnly = 1;
 
-% basePath = [diskPath filesep 'Object_Screening' filesep 'P81CS' filesep 'ClosedLoopReScreen_Session_1_20221030'];
-% taskStruct = load([basePath filesep 'P81_synth_Sub_4_Block']); patID = 'P81CS';
-% log = [basePath filesep 'P81_synth_Screening_2022-10-30_16-08-03.txt'];
-% FFAChansOnly = 1;
-% CLSynthScreen = 1; noNatSort = 1;
+basePath = [diskPath filesep 'Object_Screening' filesep 'P81CS' filesep 'ClosedLoopReScreen_Session_1_20221030'];
+taskStruct = load([basePath filesep 'P81_synth_Sub_4_Block']); patID = 'P81CS';
+log = [basePath filesep 'P81_synth_Screening_2022-10-30_16-08-03.txt'];
+FFAChansOnly = 1;
+CLSynthScreen = 1; noNatSort = 1;
 
 % basePath = [diskPath filesep 'Object_Screening' filesep 'P82CS' filesep 'FingerprintScreening_Session_1_20230111'];
 % taskStruct = load([basePath filesep 'P82CS_1_Sub_4_Block']); patID = 'P82CS';
 % log = [basePath filesep 'P82CS_1_Screening_2023-01-11_11-22-36.txt'];
 % FFAChansOnly = 1;
 
-basePath = [diskPath filesep 'Object_Screening' filesep 'P82CS' filesep 'ClosedLoopScreening_Session_1_20230115'];
-taskStruct = load([basePath filesep 'P82CS_CL_1_Sub_4_Block']); patID = 'P82CS';
-log = [basePath filesep 'P82CS_CL_1_Screening_2023-01-15_13-01-44.txt'];
-FFAChansOnly = 1;
-% 
+% basePath = [diskPath filesep 'Object_Screening' filesep 'P82CS' filesep 'ClosedLoopScreening_Session_1_20230115'];
+% taskStruct = load([basePath filesep 'P82CS_CL_1_Sub_4_Block']); patID = 'P82CS';
+% log = [basePath filesep 'P82CS_CL_1_Screening_2023-01-15_13-01-44.txt'];
+% FFAChansOnly = 1;
+
 % basePath = [diskPath filesep 'Object_Screening' filesep 'P82CS' filesep 'ClosedLoopReScreen_Session_1_20230115'];
 % taskStruct = load([basePath filesep 'P82CS_CLReScreen_Sub_4_Block']); patID = 'P82CS';
 % log = [basePath filesep 'P82CS_CLReScreen_Screening_2023-01-15_18-25-22.txt'];
@@ -358,6 +352,7 @@ end
 
 if strcmp(taskStruct.subID, '81CS_forReal')
     IMAGE_ON = 4; IMAGE_OFF = 5;
+    IMAGE_ON_LOG = 20; IMAGE_OFF_LOG = 21;
 end
 
 if ~strcmp(taskStruct.subID, '62') 
@@ -422,9 +417,13 @@ if exist('log', 'var')
     end
     
     
-    logOrder = txtVals(cell2mat(txtVals(:, 2)) == IMAGE_ON, 3);
-    logOrder = cellfun(@(x) x(1:end-4), logOrder, 'UniformOutput', false);
-    
+    if strcmp(taskStruct.subID, '81CS_forReal')
+        logOrder = txtVals(cell2mat(txtVals(:, 2)) == IMAGE_ON_LOG, 3);
+    else
+        logOrder = txtVals(cell2mat(txtVals(:, 2)) == IMAGE_ON, 3);
+    end
+     logOrder = cellfun(@(x) x(1:end-4), logOrder, 'UniformOutput', false);
+   
     imDir = Utilities.readInFiles(pathStimuli);
 %     imDir = dir(fullfile(pathStimuli));
 %     imDir = imDir(~ismember({imDir.name}, {'.', '..', '.DS_Store', 'Thumbs.db'}));
@@ -454,7 +453,9 @@ if exist('log', 'var')
     
 end
 
-
+% if strcmp(taskStruct.subID, '81CS_forReal')
+%     IMAGE_ON = IMAGE_ON_LOG; IMAGE_OFF = IMAGE_OFF_LOG;
+% end
 
 if strcmp(taskStruct.subID, 'P73CS_ParamObj')
     load([basePath filesep 'realOrder_P73CS_ParamObj.mat']);
@@ -641,7 +642,6 @@ labels(labels == 0) = [];
 % labels = catOrder;
 % anovaType = 'CategoryQuadrant';
 
-
 %% compute response latency for each cell and responses to each image 
 
 % screeningData.responses = cell(length(strctCells), 3);
@@ -655,39 +655,52 @@ end
 % 0 - basic, 
 % 1 - sliding window anova, 
 % 2 - peak of omega squared (also sliding window anova)
-method = 1 
+% 3 - Poisson spike train analysis
+method = 1; 
 for cellIndex = l(strctCells)
-    if method == 0
-        n_stdDevs = 2.5;
-        [respLat, max_group] = Utilities.computeResponseLatency(screeningData.psth(cellIndex, :), labels, screeningData.timelimits,...
-            screeningData.stimOffDur, screeningData.stimDur, method, n_stdDevs);
-    else
-        [respLat, ~] = Utilities.computeResponseLatency(screeningData.psth(cellIndex, :), labels, screeningData.timelimits,...
-            screeningData.stimOffDur, screeningData.stimDur); %#ok<UNRCH>
-    end
+   
+    switch method
+        case 0
+            n_stdDevs = 2.5;
+            [respLat, max_group] = Utilities.computeResponseLatency(screeningData.psth(cellIndex, :), labels, screeningData.timelimits,...
+                screeningData.stimOffDur, screeningData.stimDur, method, n_stdDevs);
+        case 1 
+            [respLat, ~] = Utilities.computeResponseLatency(screeningData.psth(cellIndex, :), labels, screeningData.timelimits,...
+                screeningData.stimOffDur, screeningData.stimDur); %#ok<UNRCH>
+        case 2
+            [respLat, ~] = Utilities.computeResponseLatency(screeningData.psth(cellIndex, :), labels, screeningData.timelimits,...
+                screeningData.stimOffDur, screeningData.stimDur); %#ok<UNRCH>
+        case 3
+            [respLat, ~] = Utilities.computeRespLatPoisson(screeningData.psth(cellIndex, :), labels,...
+                screeningData.sortedOrder, screeningData.timelimits, screeningData.stimDur, true);
+            resplat = -screeningData.timelimits(1)*1e3 + respLat; % adjust to be of the same for mas the other methods
+    end     
     
-    % manually adding respLat for closed loop screen
-    if strcmp(taskStruct.subID, 'P82CS_CLReScreen')
-        if strctCells(cellIndex).Name == 2360
-            respLat = 300;
-        end
-    elseif strcmp(taskStruct.subID, 'P82CS_CL_1')
-        if strctCells(cellIndex).Name == 904
-            respLat = 350;
-        elseif  strctCells(cellIndex).Name  == 449
-            respLat = 360;
+    % can get rid of this soon
+    if method ~= 3
+        % manually adding respLat for closed loop screen
+        if strcmp(taskStruct.subID, 'P82CS_CLReScreen')
+            if strctCells(cellIndex).Name == 2360
+                respLat = 300;
+            end
+        elseif strcmp(taskStruct.subID, 'P82CS_CL_1')
+            if strctCells(cellIndex).Name == 904
+                respLat = 350;
+            elseif  strctCells(cellIndex).Name  == 449
+                respLat = 360;
+            end
         end
     end
     endRas = size(screeningData.psth{cellIndex, 1}, 2);
-
-    if respLat ~= 0 
+    
+    if (respLat ~= 0) && ~isnan(respLat)
         %         respLat = 100 + (-screeningData.timelimits(1)*1e3); % choose this manually
         windowLength = floor(stimDur);
-        windowBegin = respLat;
+        windowBegin = floor(respLat);
         windowEnd = windowBegin+windowLength;
         if windowEnd > endRas
             windowEnd = endRas;
-        end 
+        end
         
         % for Hristos
         %         trial_resp{cellIndex, 1} = sum(screeningData.psth{cellIndex, 1}(:, windowBegin:windowEnd), 2);
@@ -703,22 +716,23 @@ for cellIndex = l(strctCells)
             screeningData.responses{cellIndex, 4} = max_group;
         end
         
-        % trimming long response latencies - if the latency is essentially in the next trial that is 
-        % not likely real/useful
-        if stimDur < 200 || strcmp(strctCells(cellIndex).SessionID, 'P71CS_Fast')
-            if screeningData.responses{cellIndex, 2} > 250
+        if method ~= 3
+            % trimming long response latencies - if the latency is essentially in the next trial that is
+            % not likely real/useful
+            if stimDur < 200 || strcmp(strctCells(cellIndex).SessionID, 'P71CS_Fast')
+                if screeningData.responses{cellIndex, 2} > 250
+                    screeningData.responses(cellIndex, :) = [];
+                end
+            elseif stimDur < 300 && screeningData.responses{cellIndex, 2} > 350
                 screeningData.responses(cellIndex, :) = [];
             end
-        elseif stimDur < 300 && screeningData.responses{cellIndex, 2} > 350
-            screeningData.responses(cellIndex, :) = [];
+            
         end
-        
-        
-        if exist('CLSynthScreen', 'var') && CLSynthScreen == 1     
+        if exist('CLSynthScreen', 'var') && CLSynthScreen == 1
             
             % compute responses to synthetic images
             synthOrd_postSort = repelem(1:sum(newIms), screeningData.numRepetitions)';
-            for i = 1:sum(newIms)               
+            for i = 1:sum(newIms)
                 synthRaster = screeningData.synthPsth{cellIndex, 1}(find(synthOrd_postSort == i), windowBegin:windowEnd);
                 screeningData.synthResponses{cellIndex, 1}(i, 1) = mean(mean(synthRaster))*1e3; % note the 1000x multiplcation
             end
@@ -727,8 +741,21 @@ for cellIndex = l(strctCells)
             screeningData.synthResponses{cellIndex, 3} = strctCells(cellIndex).Name;
         end
         
-        respLat = 0; % empty it so it gets assigned again if present
+        if method ~= 3
+            respLat = 0; % empty it so it gets assigned again if present
+        end
+    else
+        screeningData.responses{cellIndex, 1} = nan;
+        screeningData.responses{cellIndex, 2} = nan;
+        screeningData.responses{cellIndex, 3} = strctCells(cellIndex).Name;
+        
+        if exist('CLSynthScreen', 'var') && CLSynthScreen == 1
+            screeningData.synthResponses{cellIndex, 1} = nan;
+            screeningData.synthResponses{cellIndex, 2} = nan;
+            screeningData.synthResponses{cellIndex, 3} = strctCells(cellIndex).Name;
+        end
     end
+    
 end
 
 
