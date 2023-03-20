@@ -43,9 +43,7 @@ if strcmp(task, 'Recall_Task')
         ['Recall_Task' filesep 'P79CS' filesep 'ReScreenRecall_Session_2_20220403'],...
         ['Recall_Task' filesep 'P79CS' filesep 'ReScreenRecall_Session_3_20220405'],...
         ['Recall_Task' filesep 'P80CS' filesep 'ReScreenRecall_Session_1_20220728'],...
-        ['Recall_Task' filesep 'P80CS' filesep 'ReScreenRecall_Session_2_20220731']};
-    
-    
+        ['Recall_Task' filesep 'P80CS' filesep 'ReScreenRecall_Session_2_20220731']};    
     
     for s = 1:length(sessID)
         basePath = [diskPath filesep sessID{s}];
@@ -53,7 +51,7 @@ if strcmp(task, 'Recall_Task')
         s_CRresp{s, 1} = strctResp;
     end
     
-elseif strcmp(task, 'ReScreen_Recall')
+elseif strcmp(task, 'ReScreen_Recall') % all afternoon neurons 
     
      sessID = {['Recall_Task' filesep 'P76CS' filesep 'ReScreenRecall_Session_1_20210917'],...
         ['Recall_Task' filesep 'P76CS' filesep 'RecallScreening_Session_2_20210925'],... % moved ITResponses into screening folder for sess 2
@@ -63,7 +61,8 @@ elseif strcmp(task, 'ReScreen_Recall')
         ['Recall_Task' filesep 'P79CS' filesep 'ReScreenRecall_Session_3_20220405'],...
         ['Recall_Task' filesep 'P80CS' filesep 'ReScreenRecall_Session_1_20220728'],...
         ['Recall_Task' filesep 'P80CS' filesep 'ReScreenRecall_Session_2_20220731'],...
-        ['Object_Screening' filesep 'P81CS' filesep 'ClosedLoopReScreen_Session_1_20221030']};
+        ['Object_Screening' filesep 'P81CS' filesep 'ClosedLoopReScreen_Session_1_20221030'],...
+        ['Object_Screening' filesep 'P82CS' filesep 'ClosedLoopReScreen_Session_1_20230115']};
     
     
     
@@ -88,26 +87,20 @@ elseif strcmp(task, 'Object_Screening') % morning sessions only
         ['Object_Screening' filesep 'P80CS' filesep 'FingerprintScreening_Session_2_20220801'],...
         ['Object_Screening' filesep 'P81CS' filesep 'FingerprintScreening_Session_1_20221026'],...
         ['Object_Screening' filesep 'P81CS' filesep 'FingerprintScreening_Session_2_20221028'],...
-        ['Object_Screening' filesep 'P81CS' filesep 'ClosedLoopScreening_Session_1_20221030']}; %d
+        ['Object_Screening' filesep 'P81CS' filesep 'ClosedLoopScreening_Session_1_20221030'],...
+        ['Object_Screening' filesep 'P82CS' filesep 'FingerprintScreening_Session_1_20230111'],...
+        ['Object_Screening' filesep 'P82CS' filesep 'ClosedLoopScreening_Session_1_20230115']}; %d
     
     
 end
 
-%  for s = 1:length(sessID)
-%         basePath = [diskPath filesep sessID{s}];
-%         load([basePath filesep 'ITCells']);
-%         load([basePath filesep 'ITPsthandResponses']);
-%         s_cells{s, 1} = strctCells;
-%         s_resp{s, 1} = responses;
-%         s_resp{s, 2} = screeningPsth;
-%  end
 for s = 1:length(sessID)
         basePath = [diskPath filesep sessID{s}];
         load([basePath filesep 'strctCells']);
         load([basePath filesep 'PsthandResponses']);
         s_cells{s, 1} = strctCells;
         s_resp{s, 1} = responses;
-        s_resp{s, 2} = screeningPsth;
+        s_resp{s, 2} = psths;
 end
 
 
@@ -162,32 +155,42 @@ end
 
 
 %% Saving cells recall - if you already have all cells
+% NOTE: You need to run the first couple of cells of this to get strctResp
 setDiskPaths
 load([diskPath filesep 'Object_Screening' filesep 'AllRespITCells_Morn&AftSessions_withPDist_Scrn_500Stim.mat'])
 
-
 idx = zeros(length(strctCells), 1);
-
 
 for cellIndex = l(strctCells)
     
-    if strcmp(strctCells(cellIndex).time, 'aft') && ~strcmp(strctCells(cellIndex).SessionID, 'P81_synth')
+    if strcmp(strctCells(cellIndex).time, 'aft') && ~strcmp(strctCells(cellIndex).SessionID, 'P81_synth') && ~strcmp(strctCells(cellIndex).SessionID, 'P82CS_CLReScreen')
         idx(cellIndex) = 1;   
     end
+    
 end
 
-% remove morning (screening) neurons 
+% remove morning (screening) neurons and the CLScreen neurons
 strctCells(~idx) = [];
 responses(~idx, :) = [];
 psths(~idx, :) = [];
 
+%%
+% paranoia check - make sure cells are set up correctly
+% P76 Session 2 won't be but everything else should be fine
+for cellIndex = l(strctCells)
+    if ~isequal(strctResp(cellIndex).Name, strctCells(cellIndex).Name)
+        keyboard
+    end  
+end
+
+%%
 idx = [];
 
 % now find sigramp neurons 
 for cellIndex = l(strctCells)
     
     p_info = strctCells(cellIndex).pvalRamp;  
-    p_info = p_info(1);
+%     p_info = p_info(1);
     
     idx(cellIndex) = sum(p_info < 0.01);
 end
@@ -201,7 +204,8 @@ save([taskPath filesep 'AllITCells_500Stim_Im_SigRamp'], 'strctCells', 'response
 save([taskPath filesep 'AllITResponses_500Stim_Im_SigRamp'], 'strctResp', '-v7.3')
 
 
-%% 
+%% Old way before merges
+
 % % get rid of non-responsive units 
 % index = cellfun(@isempty, responses);
 % responses(index(:, 1), :) = [];

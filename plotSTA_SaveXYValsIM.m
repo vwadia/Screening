@@ -8,8 +8,8 @@
 
 setDiskPaths
 
-taskPath = 'Object_Screening';
-% taskPath = 'Recall_Task';
+% taskPath = 'Object_Screening';
+taskPath = 'Recall_Task';
 
 
 if strcmp(taskPath, 'Object_Screening')
@@ -42,7 +42,7 @@ options.recalledCols = [1 0.5 0;...% orange
     0 0 0];% white 
 
 %%
-for cellIndex = [3 12]%l(strctCells)
+for cellIndex = l(strctCells)
 
     if strcmp(taskPath, 'Recall_Task')
         if strcmp(strctCells(cellIndex).SessionID, 'P76CSRec_ReScreen') || strcmp(strctCells(cellIndex).SessionID, 'P76CSFast_2')
@@ -71,9 +71,7 @@ for cellIndex = [3 12]%l(strctCells)
             options.marked_positions = [134 257 454 466 488 492 498 499];
             options.recalled_stim = [55 88 148 251 256 274 285 365];
         end
-        
-        
-    end
+     end
     
     
     options.ind_train = imageIDs; % use all objects to calculate STA
@@ -92,30 +90,30 @@ for cellIndex = [3 12]%l(strctCells)
     sgtitle({['Cell number ' num2str(strctCells(cellIndex).Name)] 'STA and projections ', [strctCells(cellIndex).brainArea ' - ' strctCells(cellIndex).SessionID]});
     
     
-%     if isfield(options, 'encoded_stim') || isfield(options, 'recalled_stim')
-%         print(hfig, [pathOut filesep strctCells(cellIndex).brainArea '_' num2str(strctCells(cellIndex).ChannelNumber) '_' num2str(strctCells(cellIndex).Name) '_orderedStim'], '-dpng', '-r0')
-%     else
-%         print(hfig, [pathOut filesep strctCells(cellIndex).brainArea '_' num2str(strctCells(cellIndex).ChannelNumber) '_' num2str(strctCells(cellIndex).Name)], '-dpng', '-r0')
-%     end
+    if isfield(options, 'encoded_stim') || isfield(options, 'recalled_stim')
+        print(hfig, [pathOut filesep strctCells(cellIndex).brainArea '_' num2str(strctCells(cellIndex).ChannelNumber) '_' num2str(strctCells(cellIndex).Name) '_orderedStim'], '-dpng', '-r0')
+    else
+        print(hfig, [pathOut filesep strctCells(cellIndex).brainArea '_' num2str(strctCells(cellIndex).ChannelNumber) '_' num2str(strctCells(cellIndex).Name)], '-dpng', '-r0')
+    end
     
     
     
-%     close all
+    close all
     
     
     
 
 end
 
-% save([diskPath filesep taskPath filesep 'AllITCells_500Stim_Im_SigRamp'], 'strctCells', 'responses', 'psths', '-v7.3')
+save([diskPath filesep taskPath filesep 'AllITCells_500Stim_Im_SigRamp'], 'strctCells', 'responses', 'psths', '-v7.3')
 %%
-p = [];
-for cellIndex = l(strctCells)
-    
-    
-    [p(cellIndex), ~] = Utilities.ObjectSpace.linearity_measure_STA(responses{cellIndex, 1}, params, options);
-    
-    
-    
-    
-end
+% p = [];
+% for cellIndex = l(strctCells)
+%     
+%     
+%     [p(cellIndex), ~] = Utilities.ObjectSpace.linearity_measure_STA(responses{cellIndex, 1}, params, options);
+%     
+%     
+%     
+%     
+% end

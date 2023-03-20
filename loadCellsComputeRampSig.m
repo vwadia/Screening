@@ -18,7 +18,7 @@ m_responses = responses;
 m_strctCells = strctCells;
 
 % get rid of non-responsive units 
-index = cellfun(@isempty, m_responses);
+index = cell2mat(cellfun(@isnan, m_responses(:, 2), 'UniformOutput', false));
 m_responses(index(:, 1), :) = [];
 m_psths(index(:, 1), :) = [];
 m_strctCells(index(:, 1)) = [];
@@ -36,7 +36,7 @@ a_responses = responses;
 a_strctCells = strctCells;
 
 % get rid of non-responsive units 
-index = cellfun(@isempty, a_responses);
+index = cell2mat(cellfun(@isnan, a_responses(:, 2), 'UniformOutput', false));
 a_responses(index(:, 1), :) = [];
 a_psths(index(:, 1), :) = [];
 a_strctCells(index(:, 1)) = [];
@@ -44,6 +44,21 @@ a_strctCells(index(:, 1)) = [];
 strctCells = [m_strctCells a_strctCells];
 psths = [m_psths; a_psths];
 responses = [m_responses(:, 1:3); a_responses(:, 1:3)];
+
+%% adding time field 
+% 
+% for cm = 1:length(m_strctCells)
+%     
+%     m_strctCells(cm).time = 'morn';
+%     
+% end
+% 
+% for ca = 1:length(a_strctCells)
+%     
+%     a_strctCells(ca).time = 'aft';
+%     
+% end
+
 %% computing
 
 load([diskPath filesep 'ObjectSpace' filesep '500Stimuli' filesep 'params_Alexnet_fc6_500Stimuli.mat']); % will create dataParams = 500x50
@@ -52,7 +67,7 @@ load([diskPath filesep 'ObjectSpace' filesep '500Stimuli' filesep 'params_Alexne
 options.screenType = 'Object';
 options.ind_train = imageIDs; % use all objects to calculate STA
         
-for cellIndex = l(strctCells)
+parfor cellIndex = l(strctCells)
     tic
     n_reps = 100;
     p_dist = nan(1, n_reps);
@@ -166,30 +181,6 @@ save([diskPath filesep 'Object_Screening' filesep 'AllRespITCells_Morn&AftSessio
 % 
 % end 
 % 
-%% Saving sigramp cells
-
-% load([diskPath filesep 'Object_Screening' filesep 'AllRespITCells_Morn&AftSessions_withPDist_Scrn_500Stim.mat'])
-load([diskPath filesep 'Object_Screening' filesep 'AllMergedRespITCells_withPDist_Scrn_500Stim.mat'])
-
-%%
-idx = zeros(length(strctCells), 1);
-
-
-for cellIndex = l(strctCells)
-    
-    p_info = strctCells(cellIndex).pvalRamp;
-    
-    
-    idx(cellIndex) = sum(p_info < 0.01);
-end
-
-
-strctCells = strctCells(idx == length(p_info));
-responses = responses(idx == length(p_info), :);
-psths = psths(idx == length(p_info), :);
-
-keyboard
-save([diskPath filesep 'Object_Screening' filesep 'MergedITCells_500Stim_Scrn_SigRamp.mat'], 'strctCells', 'responses', 'psths', '-v7.3')
 
 %% after manually validating cellmatching per session  - make a new struct
 
@@ -254,6 +245,29 @@ psths = new_psths;
 save([diskPath filesep 'Object_Screening' filesep 'AllMergedRespITCells_withPDist_Scrn_500Stim.mat'], 'strctCells', 'psths', 'responses', '-v7.3')
 
 
+%% Finally - Saving merged sigramp cells
+
+% load([diskPath filesep 'Object_Screening' filesep 'AllRespITCells_Morn&AftSessions_withPDist_Scrn_500Stim.mat'])
+load([diskPath filesep 'Object_Screening' filesep 'AllMergedRespITCells_withPDist_Scrn_500Stim.mat'])
+
+idx = zeros(length(strctCells), 1);
+
+
+for cellIndex = l(strctCells)
+    
+    p_info = strctCells(cellIndex).pvalRamp;
+    
+    
+    idx(cellIndex) = sum(p_info < 0.01);
+end
+
+
+strctCells = strctCells(idx == length(p_info));
+responses = responses(idx == length(p_info), :);
+psths = psths(idx == length(p_info), :);
+
+keyboard
+save([diskPath filesep 'Object_Screening' filesep 'MergedITCells_500Stim_Scrn_SigRamp.mat'], 'strctCells', 'responses', 'psths', '-v7.3')
 
 
 
@@ -318,25 +332,3 @@ for i = 1:length(pt_ids)
 end  
     
     
-%%
-%  ise = [];
-% 
-% for i = 1:284
-%     
-%     ise(i) = isequal(t3.responses{i, 1}, responses{i, 1});
-%     
-%     
-%     
-% end
-%    
-% %%
-% difs = find(ise ~= 1)
-%     
-%   for j = 1:length(difs)
-%       figure; 
-%       scatter(1:500, responses{difs(j), 1} - t3.responses{difs(j), 1});
-%       
-%   end
-%     
-
-
