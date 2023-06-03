@@ -205,11 +205,11 @@ addpath(genpath('synthetic_face_generator'));
 % log = [basePath filesep 'P81CS_AM_Screening_2022-10-30_09-32-21.txt'];
 % FFAChansOnly = 1;
 
-basePath = [diskPath filesep 'Object_Screening' filesep 'P81CS' filesep 'ClosedLoopReScreen_Session_1_20221030'];
-taskStruct = load([basePath filesep 'P81_synth_Sub_4_Block']); patID = 'P81CS';
-log = [basePath filesep 'P81_synth_Screening_2022-10-30_16-08-03.txt'];
-FFAChansOnly = 1;
-CLSynthScreen = 1; noNatSort = 1;
+% basePath = [diskPath filesep 'Object_Screening' filesep 'P81CS' filesep 'ClosedLoopReScreen_Session_1_20221030'];
+% taskStruct = load([basePath filesep 'P81_synth_Sub_4_Block']); patID = 'P81CS';
+% log = [basePath filesep 'P81_synth_Screening_2022-10-30_16-08-03.txt'];
+% FFAChansOnly = 1;
+% CLSynthScreen = 1; noNatSort = 1;
 
 % basePath = [diskPath filesep 'Object_Screening' filesep 'P82CS' filesep 'FingerprintScreening_Session_1_20230111'];
 % taskStruct = load([basePath filesep 'P82CS_1_Sub_4_Block']); patID = 'P82CS';
@@ -227,7 +227,52 @@ CLSynthScreen = 1; noNatSort = 1;
 % FFAChansOnly = 1;
 % CLSynthScreen = 1; noNatSort = 0;
 
+% basePath = [diskPath filesep 'Object_Screening' filesep 'P84CS' filesep 'FingerprintScreening_Session_1_20230405'];
+% taskStruct = load([basePath filesep 'P84CS_1_Sub_4_Block']); patID = 'P84CS';
+% log = [basePath filesep 'P84CS_1_Screening_2023-04-05_15-04-49.txt'];
+% FFAChansOnly = 1;
 
+% basePath = [diskPath filesep 'Recall_Task' filesep 'P84CS' filesep 'RecallScreening_Session_1_20230406'];
+% taskStruct = load([basePath filesep 'P84CS_RecScreen_1_Sub_4_Block']); patID = 'P84CS';
+% log = [basePath filesep 'P84CS_RecScreen_1_Screening_2023-04-06_10-24-54.txt'];
+% FFAChansOnly = 1;
+
+% basePath = [diskPath filesep 'Recall_Task' filesep 'P84CS' filesep 'ReScreenRecall_Session_1_20230406'];
+% taskStruct = load([basePath filesep 'P84CS_ReScreenRecall_1_Sub_4_Block']); patID = 'P84CS';
+% log = [basePath filesep 'P84CS_ReScreenRecall_1_Screening_2023-04-06_15-25-28.txt'];
+% FFAChansOnly = 0;
+
+% basePath = [diskPath filesep 'Recall_Task' filesep 'P84CS' filesep 'RecallScreening_Session_2_20230408'];
+% taskStruct = load([basePath filesep 'P84CS_RecScreen_2_Sub_4_Block']); patID = 'P84CS';
+% log = [basePath filesep 'P84CS_RecScreen_2_Screening_2023-04-08_11-27-29.txt'];
+% FFAChansOnly = 1;
+
+% basePath = [diskPath filesep 'Recall_Task' filesep 'P84CS' filesep 'ReScreenRecall_Session_2_20230408'];
+% taskStruct = load([basePath filesep 'P84CS_ReScreenRecall_2_Sub_4_Block']); patID = 'P84CS';
+% log = [basePath filesep 'P84CS_ReScreenRecall_2_Screening_2023-04-08_16-28-54.txt'];
+% FFAChansOnly = 0;
+
+% basePath = [diskPath filesep 'Object_Screening' filesep 'P85CS' filesep 'ClosedLoopScreening_Session_1_20230419'];
+% taskStruct = load([basePath filesep 'P85CS_1_Sub_4_Block']); patID = 'P85CS';
+% log = [basePath filesep 'P85CS_1_Screening_2023-04-19_10-33-43.txt'];
+% FFAChansOnly = 1;
+
+% basePath = [diskPath filesep 'Object_Screening' filesep 'P85CS' filesep 'ClosedLoopReScreen_Session_1_20230419'];
+% taskStruct = load([basePath filesep 'P85CS_CLReScreen_Sub_4_Block']); patID = 'P85CS';
+% log = [basePath filesep 'P85CS_CLReScreen_Screening_2023-04-19_16-19-20.txt'];
+% FFAChansOnly = 1;
+% CLSynthScreen = 1; noNatSort = 0;
+
+% basePath = [diskPath filesep 'Recall_Task' filesep 'P85CS' filesep 'RecallScreening_Session_1_20230424'];
+% taskStruct = load([basePath filesep 'P85CS_RecScreen_1_Sub_4_Block']); patID = 'P85CS';
+% log = [basePath filesep 'P85CS_RecScreen_1_Screening_2023-04-24_10-59-06.txt'];
+% FFAChansOnly = 1;
+
+basePath = [diskPath filesep 'Recall_Task' filesep 'P85CS' filesep 'ReScreenRecall_Session_1_20230424'];
+taskStruct = load([basePath filesep 'P85CS_ReScreenRecall_Sub_4_Block']); patID = 'P85CS';
+log = [basePath filesep 'P85CS_ReScreenRecall_Screening_2023-04-24_16-41-05.txt'];
+FFAChansOnly = 0;
+CLSynthScreen = 1; noNatSort = 0;
 
 sortPath = [filesep 'sort'];
 finalPath = [filesep 'final'];
@@ -346,6 +391,10 @@ elseif strcmp(taskStruct.subID, 'P80CS_ReScreenRecall')
     screeningData.events = events(experimentBegin(2):experimentEnd(2), :);
 elseif strcmp(taskStruct.subID, 'P80CS_ReScreecRecall_2')
     screeningData.events = events(experimentBegin(2):experimentEnd(2), :);
+elseif strcmp(taskStruct.subID, 'P84CS_ReScreenRecall_1') || strcmp(taskStruct.subID, 'P84CS_ReScreenRecall_2')
+    screeningData.events = events(experimentBegin(2):experimentEnd(2), :);
+elseif strcmp(taskStruct.subID, 'P85CS_ReScreenRecall')
+    screeningData.events = events(experimentBegin(4):experimentEnd(2), :);
 else
     screeningData.events = events(experimentBegin:experimentEnd, :);
 end
@@ -656,7 +705,7 @@ end
 % 1 - sliding window anova, 
 % 2 - peak of omega squared (also sliding window anova)
 % 3 - Poisson spike train analysis
-method = 1; 
+method = 3; 
 for cellIndex = l(strctCells)
    
     switch method
@@ -670,10 +719,15 @@ for cellIndex = l(strctCells)
         case 2
             [respLat, ~] = Utilities.computeResponseLatency(screeningData.psth(cellIndex, :), labels, screeningData.timelimits,...
                 screeningData.stimOffDur, screeningData.stimDur); %#ok<UNRCH>
-        case 3
+        case 3 %Poisson
+            if exist('CLSynthScreen', 'var') && CLSynthScreen == 1
+                sortedOrderRealIms = screeningData.sortedOrder(ismember(sortedOrder, screeningData.imageIDs));
+            else
+                sortedOrderRealIms = screeningData.sortedOrder;
+            end
             [respLat, ~] = Utilities.computeRespLatPoisson(screeningData.psth(cellIndex, :), labels,...
-                screeningData.sortedOrder, screeningData.timelimits, screeningData.stimDur, true);
-            resplat = -screeningData.timelimits(1)*1e3 + respLat; % adjust to be of the same for mas the other methods
+                sortedOrderRealIms, screeningData.timelimits, screeningData.stimDur, true);
+            respLat = -screeningData.timelimits(1)*1e3 + respLat; % adjust to be of the same for mas the other methods
     end     
     
     % can get rid of this soon
@@ -800,7 +854,7 @@ keyboard
 %%
 % for paper - vwadia March 2022
 responses = screeningData.responses;
-screeningPsth = screeningData.psth;
+psths = screeningData.psth;
 
 if ~exist('CLSynthScreen', 'var') || CLSynthScreen == 0
     order = screeningData.sortedOrder;
@@ -810,15 +864,15 @@ else
 end
 
 if FFAChansOnly
-    save([basePath filesep 'PsthandResponses'], 'screeningPsth', 'responses', 'order', '-v7.3')
+    save([basePath filesep 'PsthandResponses'], 'psths', 'responses', 'order', '-v7.3')
     save([basePath filesep 'strctCells'], 'strctCells')
     
 elseif exist('IT_MTL_Cells')
-    save([basePath filesep 'IT_MTL_PsthandResponses'], 'screeningPsth', 'responses', 'order', '-v7.3')
+    save([basePath filesep 'IT_MTL_PsthandResponses'], 'psths', 'responses', 'order', '-v7.3')
     save([basePath filesep 'IT_MTLCells'], 'strctCells')
     
 else
-    save([basePath filesep 'PsthandResponses'], 'screeningPsth', 'responses', 'order', '-v7.3')
+    save([basePath filesep 'PsthandResponses'], 'psths', 'responses', 'order', '-v7.3')
     save([basePath filesep 'strctCells'], 'strctCells')
     
 end
@@ -898,7 +952,9 @@ if (isfield(screeningData, 'catIDs') && ~isempty(screeningData.catIDs))
                 || strcmp(taskStruct.subID, 'P79CS_4') || strcmp(taskStruct.subID, 'P79CS_ReScreen_4') || strcmp(taskStruct.subID, 'P80CS_2') || strcmp(taskStruct.subID, 'P80CS_RecScreen_1')...
                 || strcmp(taskStruct.subID, 'P80CS_ReScreenRecall') || strcmp(taskStruct.subID, 'P80CS_RecScreen_2') || strcmp(taskStruct.subID, 'P80CS_2_Att2') || strcmp(taskStruct.subID, '81CS_forReal')...
                 || strcmp(taskStruct.subID, 'P81CS_2') || strcmp(taskStruct.subID, 'P81CS_AM') || strcmp(taskStruct.subID, 'P81_synth') || strcmp(taskStruct.subID, 'P82CS_1') || strcmp(taskStruct.subID, 'P82CS_CL_1')...
-                || strcmp(taskStruct.subID, 'P82CS_CLReScreen')
+                || strcmp(taskStruct.subID, 'P82CS_CLReScreen') || strcmp(taskStruct.subID, 'P84CS_1') || strcmp(taskStruct.subID, 'P84CS_RecScreen_1') || strcmp(taskStruct.subID, 'P84CS_ReScreenRecall_1')...
+                || strcmp(taskStruct.subID, 'P84CS_RecScreen_2') || strcmp(taskStruct.subID, 'P84CS_ReScreenRecall_2') || strcmp(taskStruct.subID, 'P85CS_1') || strcmp(taskStruct.subID, 'P85CS_CLReScreen')...
+                || strcmp(taskStruct.subID, 'P85CS_RecScreen_1') || strcmp(taskStruct.subID, 'P85CS_ReScreenRecall')
             % 1593 Param Objs
             screeningData.lgnd = {'Faces', 'Text', 'Plants/fruits', 'Animals', 'Objects'};
 %             screeningData.lgndCols = 
@@ -948,8 +1004,8 @@ for cellIndex = l(strctCells)
     screeningData.responses(emptyIndex, 3) = {0};                    % Fill empty cells with 0
     cellInQuestion = find(cell2mat(screeningData.responses(:, 3))==strctCells(cellIndex).Name);
     
-    if ~isempty(cellInQuestion)
-        respLat = screeningData.responses{cellInQuestion, 2};
+    if ~isempty(cellInQuestion) && ~isnan(screeningData.responses{cellInQuestion, 2})
+        respLat = floor(screeningData.responses{cellInQuestion, 2});
         cellInfo = strctCells(cellIndex);
         
         if onlyTopandBottom
@@ -984,19 +1040,22 @@ elseif strcmp(taskStruct.subID, 'P75CS_ObjScreen') || strcmp(taskStruct.subID, '
         || strcmp(taskStruct.subID, 'P79CS_3') || strcmp(taskStruct.subID, 'P79CS_ReScreen_3') || strcmp(taskStruct.subID, 'P79CS_4') || strcmp(taskStruct.subID, 'P79CS_ReScreen_4')...
         || strcmp(taskStruct.subID, 'P80CS_2') || strcmp(taskStruct.subID, 'P80CS_RecScreen_1') || strcmp(taskStruct.subID, 'P80CS_ReScreenRecall') || strcmp(taskStruct.subID, 'P80CS_RecScreen_2')...
         || strcmp(taskStruct.subID, 'P80CS_2_Att2') || strcmp(taskStruct.subID, '81CS_forReal') || strcmp(taskStruct.subID, 'P81CS_2') || strcmp(taskStruct.subID, 'P81CS_AM') || strcmp(taskStruct.subID, 'P81_synth')...
-        || strcmp(taskStruct.subID, 'P82CS_1') || strcmp(taskStruct.subID, 'P82CS_CL_1')
+        || strcmp(taskStruct.subID, 'P82CS_1') || strcmp(taskStruct.subID, 'P82CS_CL_1') || strcmp(taskStruct.subID, 'P84CS_1') || strcmp(taskStruct.subID, 'P84CS_RecScreen_1')...
+        || strcmp(taskStruct.subID, 'P84CS_ReScreenRecall_1') || strcmp(taskStruct.subID, 'P84CS_RecScreen_2') || strcmp(taskStruct.subID, 'P84CS_ReScreenRecall_2') || strcmp(taskStruct.subID, 'P85CS_1')...
+        || strcmp(taskStruct.subID, 'P85CS_CLReScreen') || strcmp(taskStruct.subID, 'P85CS_RecScreen_1') || strcmp(taskStruct.subID, 'P85CS_ReScreenRecall')
     
         load([diskPath filesep 'ObjectSpace' filesep '500Stimuli' filesep 'params_Alexnet_fc6_500Stimuli.mat']); % will create params = 500x50
+%         load([diskPath filesep 'ObjectSpace' filesep '500Stimuli' filesep 'scores_alexnet_comparison.mat']); params = scores{1};
         options.screenType = 'Object';
 elseif strcmp(taskStruct.subID, 'P73CS_ParamObj_500')
     % get params matrix
-%     params2 = Utilities.getDNActivations(path500Stimuli, screeningData.imageIDs, 50, 'fc6');
+%     params2 = Utilities.getDNActivations(path500Stimuli, 50, 'fc6');
     options.screenType = 'Object';
     load([diskPath filesep 'ObjectSpace' filesep '500Stimuli' filesep 'params_Alexnet_fc6_500Stimuli.mat']); % will create params = 500x50
 %     assert(isequal(params, params2), 'WRONG IMAGES');
 else
     % get params matrix
-    params = Utilities.getDNActivations(pathStimuli, screeningData.imageIDs, 50, 'fc6');
+    params = Utilities.getDNActivations(pathStimuli, 50, 'fc6');
     options.screenType = 'Object';
     disp('hi');
 end
@@ -1004,6 +1063,7 @@ end
 % basePath = taskPath;
 % screeningData.responses = responses;
 % pathOut = [basePath filesep 'STA_and_projections_stdNorm'];
+% pathOut = [basePath filesep 'STA_and_projections_varWindow_4096D'];
 pathOut = [basePath filesep 'STA_and_projections_varWindow'];
 
 if ~exist(pathOut)
@@ -1055,15 +1115,16 @@ elseif  strcmp(taskStruct.subID, 'P80CS_RecScreen_1') || strcmp(taskStruct.subID
 elseif strcmp(taskStruct.subID, 'P80CS_RecScreen_2') || strcmp(taskStruct.subID, 'P80CS_ReScreecRecall_2') 
     options.marked_positions = [134 257 454 466 488 492 498 499];
     options.recalled_stim = [55 88 148 251 256 274 285 365];
+elseif strcmp(taskStruct.subID, 'P84CS_RecScreen_1') || strcmp(taskStruct.subID, 'P84CS_ReScreenRecall_1') 
+    options.marked_positions = [144   175   260   281   325   387   466   478];
+    options.recalled_stim = [68 121 243 261 281 308 415 434];
+elseif strcmp(taskStruct.subID, 'P84CS_RecScreen_2') || strcmp(taskStruct.subID, 'P84CS_ReScreenRecall_2')
+    options.marked_positions = [18   191   297   329   379   466   471   483];
+    options.recalled_stim = [52 141 195 223 238 351 399 482];
+elseif strcmp(taskStruct.subID, 'P85CS_RecScreen_1') || strcmp(taskStruct.subID, 'P85CS_ReScreenRecall')
+    options.marked_positions = [ 4   160   306   329   387   397   497   500];
+    options.recalled_stim = [7 11 99 153 201 251 355 486];
 end
-
-
-% write a script to check images automatically (load in stimUsedRecall and
-% general imDir and compare filenames after sampling recalled_stim from
-% imDir
-
-% 77   112   160   232   278   345   387   440
-% options.encoded_stim = [134:210];
 
 
 options.recalledCols = [1 0.5 0;...% orange
@@ -1082,9 +1143,9 @@ options.recalledCols = [1 0.5 0;...% orange
 %     0.75 0.75 0.75];% grey 
 
 alpha = 0.01;
-for cellIndex = l(strctCells)
+for cellIndex = 3%l(strctCells)
     
-    if ~isempty(screeningData.responses{cellIndex, 2})
+    if ~isempty(screeningData.responses{cellIndex, 2}) && ~isnan(screeningData.responses{cellIndex, 2})
         options.ind_train = screeningData.imageIDs; % use all objects to calculate STA
 %         options.encoded_stim = [19, 21, 69, 3, 51]; % caharacters in AIC screen March28th
 %         [hfig, maxCoords, minCoords, medCoords, max_stim, min_stim, med_stim] = STA_figure(screeningData.responses{cellIndex}, score, options, z_scored); % pass score to this instead of projectedResponses
@@ -1129,19 +1190,21 @@ end
 %% Sept 25th, 2021
 
 % updated Nov 16th, 2021
-% Make plot and click on points to use (breakpoint in STA_figure_original - right after scatter is made ~line 157)
+% Make plot and click on points to use (breakpoint in STA_figure_original - right after scatter is made ~line 200)
 % Use those XY coordinates to find out what indicies in x, y they correspond to - see below for converting cursor info into pot_rec_stim
 % in STA_figure_original you now have pot_stim_pos = options.marked_positions
 % reorder_ind(indices) are the actual stimuli numbers
 
 %% March 22nd, 2022
 
-% As stated above, make plot and click on points to use (breakpoint in STA_figure_original - right after scatter is made ~line 157)
+% As stated above, make plot and click on points to use (breakpoint in STA_figure_original - right after scatter is made ~line 200)
 % Save each pair as 'cursor_info_pairx' 
 % Once this is done for all 3/4 pairs dbquit and return here - use the cell below to save them as pot_rec_stim
 % SAVE THE VARIABLE options.pot_rec_stim
 % Re-run the STA cell above - with a breakpoint in STA_figure_original after the if statement 'exist(pot_rec_stim)'
 % Note down the 'pot_stim_pos' you will get - reorder_ind(pot_stim_pos) are the actual stimuli numbers - add them to the STA cell above
+% run the cell below the pot_rec_stim cell to write out the chosen recall
+% stimuli (verify manually too)
 
 %%
 
@@ -1166,6 +1229,24 @@ end
 % important step
 pot_rec_stim = options.pot_rec_stim;
 save([basePath filesep 'markedPositionsRecallStim'], 'pot_rec_stim');
+
+%% writing out chosen recall stimuli
+
+files = Utilities.readInFiles(pathStimuli);
+
+wantedStimRecall = files(options.recalled_stim);
+outPath = [basePath filesep 'stimuliUsedRecall'];
+if ~exist(outPath)
+    mkdir(outPath)
+end
+for i = 1:length(wantedStimRecall)
+    
+    toMove = [wantedStimRecall(i).folder filesep wantedStimRecall(i).name];
+    copyfile(toMove, [outPath filesep wantedStimRecall(i).name]);
+    
+end
+
+
 
 %%
 
@@ -1399,13 +1480,13 @@ elseif strcmp(taskStruct.subID, 'P75CS_ObjScreen') || strcmp(taskStruct.subID, '
         options.screenType = 'Object';
 elseif strcmp(taskStruct.subID, 'P73CS_ParamObj_500')
     % get params matrix
-    params2 = Utilities.getDNActivations(path500Stimuli, screeningData.imageIDs, 50, 'fc6');
+    params2 = Utilities.getDNActivations(path500Stimuli, 50, 'fc6');
     options.screenType = 'Object';
     load([diskPath filesep 'ObjectSpace' filesep '500Stimuli' filesep 'params_Alexnet_fc6_500Stimuli.mat']); % will create params = 500x50
     assert(isequal(params, params2), 'WRONG IMAGES');
 else
     % get params matrix
-    params = Utilities.getDNActivations(pathStimuli, screeningData.imageIDs, 50, 'fc6');
+    params = Utilities.getDNActivations(pathStimuli, 50, 'fc6');
     options.screenType = 'Object';
     disp('hi');
 end

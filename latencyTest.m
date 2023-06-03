@@ -122,6 +122,13 @@ end
 % 1 - sliding window anova,
 % 2 - peak of omega squared (also sliding window anova)
 % 3 - Poisson single trial latency (added March 2023 vwadia)
+
+% March2023 -
+% 0 - 365/226 responsive/ramp tuned units respectively
+% 1 - 237/207 responsive/ramp tuned units respectively
+% 2 - 329/201 responsive/ramp tuned units respectively
+% 3 - 397/240 responsive/ramp tuned units respectively
+
 c_resp = {};
 
 comparison(:, 1) = strctCELL(:, 1);
@@ -161,7 +168,9 @@ for method = [0 1 2 3]
             n_stdDevs = 2.5;
             [respLat, max_group] = Utilities.computeResponseLatency(psths(cellIndex, :), labels, timelimits,...
                 stimOffDur, stimDur, method, n_stdDevs);
-            
+            if isempty(respLat)
+                respLat = 0;
+            end
             endRas = size(psths{cellIndex, 1}, 2);
             if respLat ~= 0
                 
@@ -314,11 +323,16 @@ sorted_comparison = [l_comp(bl, :); r_comp(br, :)];
 f = figure;
 % histogram(cell2mat(sorted_comparison(:, 3)), 50:20:300, 'FaceColor', [0.6350 0.0780 0.1840]);
 histogram(cell2mat(c_resp{1, 4}(:, 2)), 50:20:300, 'FaceColor', [0.6350 0.0780 0.1840]); % poisson latency
+
+stdErr = std(rL{4})/sqrt(length(rL{4}));
+
 % ylim([0 60])
 title('Response latency of IT neurons')
 xlabel('Response Latency (ms)');
 ylabel('No of neurons');
 set(gca, 'FontSize', 14, 'FontWeight', 'bold');
+str = {'Mean = ', [num2str(mean(cell2mat(c_resp{1, 4}(:, 2))),' %.2f') ' +/- ' num2str(stdErr, ' %.2f')]};
+text(200, 100, str, 'Color', 'k', 'FontSize', 13, 'FontWeight', 'bold');
 % filename = [diskPath filesep taskPath filesep 'Hist_RespLat_Method1_2point5StdDev_80offset'];
 filename = [diskPath filesep taskPath filesep 'Hist_SingleTrial_RespLat_Poisson']; % median 131.74ms
 print(f, filename, '-dpng', '-r0')
@@ -332,15 +346,27 @@ ramp_respLat = c_resp{1, 4}(sigInds, 2);
 f = figure;
 % histogram(cell2mat(sorted_comparison(:, 3)), 50:20:300, 'FaceColor', [0.6350 0.0780 0.1840]);
 histogram(cell2mat(ramp_respLat), 50:20:300, 'FaceColor', [0.6350 0.0780 0.1840]);
+
+stdErr = std(cell2mat(ramp_respLat))/sqrt(length(ramp_respLat));
 % ylim([0 60])
 title('Response latency of IT neurons')
 xlabel('Response Latency (ms)');
 ylabel('No of neurons');
 set(gca, 'FontSize', 14, 'FontWeight', 'bold');
+str = {'Mean = ', [num2str(mean(cell2mat(ramp_respLat)),' %.2f') ' +/- ' num2str(stdErr, ' %.2f')]};
+text(200, 60, str, 'Color', 'k', 'FontSize', 13, 'FontWeight', 'bold');
+
 % filename = [diskPath filesep taskPath filesep 'Hist_RespLat_Method1_2point5StdDev_80offset'];
 filename = [diskPath filesep taskPath filesep 'Hist_SingleTrial_RespLat_Poisson_SigRamp']; % median 130.585ms
 print(f, filename, '-dpng', '-r0')
 
+%% 
+figure;
+
+for i = 1:4
+subplot(2, 2, i)
+histogram(rL{i})
+end
 
 %% compute pval of ramp
 
@@ -366,7 +392,7 @@ for netwkNum = 1%:4
     
     
     
-    for i = 1:4%1:2 % testing the 3 different resp lat conputations
+    for i = 4%1:4%1:2 % testing the 3 different resp lat conputations
         
         strctCells_sigRamp = strctCells;
         
@@ -406,7 +432,7 @@ for netwkNum = 1%:4
             
             pvalRamp{cellIndex, i} = p_sum;
             strctCells_sigRamp(cellIndex).pvalRamp = p_sum;
-            disp(['Finished for cell ' num2str(cellIndex)])
+%             disp(['Finished for cell ' num2str(cellIndex)])
         end
         
         pvals = cell2mat(pvalRamp(:, i));

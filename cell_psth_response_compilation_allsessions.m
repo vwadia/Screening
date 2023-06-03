@@ -1,5 +1,5 @@
 % Script to update the PsthandResponses and structCells
-% in all session folders
+% in all session folders after new RL computation
 
 % this is basically the relevant parts of screeningScript_main in a loop
 % I should maybe re-write the screening script and make it a package...

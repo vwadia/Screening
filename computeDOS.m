@@ -108,7 +108,7 @@ for cellIndex = 1:length(strctCells)
      end
      
     N = length(unique(labels));
-    respLat = responses{cellIndex, 2};
+    respLat = floor(responses{cellIndex, 2});
     R_i = zeros(1, N);
     
     for ct = 1:N
@@ -163,12 +163,15 @@ hold on
 
 
 % histogram(IT_DOS, 10, 'FaceColor', [0.6350 0.0780 0.1840]);
-histogram(IT_DOS, 10, 'FaceColor', [0.4940 0.1840 0.5560]);
+histogram(IT_DOS, 10, 'FaceColor', [0.4940 0.1840 0.5560]); stdErr = std(IT_DOS)/sqrt(length(IT_DOS));
 % histogram(MTL_DOS, 10, 'FaceColor', [0.4940 0.1840 0.5560]);
 title('DOS for visually responsive IT neurons');
 ylabel('Number of Cells');
 xlabel('Depth of Selectivity');
 set(gca, 'FontSize', 14, 'FontWeight', 'bold');
+str = {'Mean = ', [num2str(mean(IT_DOS),' %.2f') ' +/- ' num2str(stdErr, ' %.2f')]};
+% str = {['Mean = ' num2str(mean(IT_DOS),' %.3f')]}; 
+text(0.5, 60, str, 'Color', 'k', 'FontSize', 14, 'FontWeight', 'bold');
 filename = [diskPath filesep taskPath filesep 'DOS_ITneurons'];
 print(f, filename, '-dpng', '-r0');
 

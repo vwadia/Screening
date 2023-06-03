@@ -46,12 +46,19 @@
 
 setDiskPaths
 indiv_sess = 1;
-compress_expand = 1;
+compress_expand = 0;
 splitByCat = 0;
     
 taskPath = 'Object_Screening';
 % sessPath = [diskPath filesep taskPath filesep 'P82CS' filesep 'FingerprintScreening_Session_1_20230111'];
 sessPath = [diskPath filesep taskPath filesep 'P82CS' filesep 'ClosedLoopScreening_Session_1_20230115'];
+
+
+% taskPath = 'Recall_Task';
+% sessPath = [diskPath filesep taskPath filesep 'P82CS' filesep 'FingerprintScreening_Session_1_20230111'];
+% sessPath = [diskPath filesep taskPath filesep 'P84CS' filesep 'RecallScreening_Session_2_20230408'];
+
+
 
 load([sessPath filesep 'PsthandResponses']);
 load([sessPath filesep 'strctCells']);
@@ -68,7 +75,7 @@ layermat = 'fc6';
 
 % what are differences between these 2?
 load([diskPath filesep 'ObjectSpace' filesep stimDir filesep ['params_AlexnetPYTHON_MatlabMean_' layermat '_' stimDir '.mat']]);
-% load([diskPath filesep 'ObjectSpace' filesep stimDir filesep ['params_AlexnetPYTHON_' layermat '_' stimDir '.mat']]);
+% load([diskPath filesep 'ObjectSpace' filesep stimDir filesep ['params_AlexNetPYTHON_' layermat '_' stimDir '.mat']]);
 
 if compress_expand
     [coeff, score, ~, ~, ~, mu] = pca(feat);%, 'Centered', false); % score is much higher range
@@ -101,8 +108,9 @@ addNoise = 0;
 
 featMat = {};
 n_steps = 5;
-scale = 1;
+scale = 10;
 n_steps_ortho = 5;
+normSpace = false;
 
 % image_spread = 'PrefOnly'; 
 image_spread = 'PrefandOrtho'; 
@@ -158,9 +166,9 @@ for cat = catRange
     end
     
 %     cellIndex = 1;
-    for cellIndex = 3 %1:length(strctCells)
+    for cellIndex = 3%1:length(strctCells)
         
-        if ~isempty(responses{cellIndex, 2})
+        if ~isempty(responses{cellIndex, 2}) && ~isnan(responses{cellIndex, 2})
             resp = responses{cellIndex, 1};
             [sta, ~] = Utilities.ObjectSpace.analysis_STA(resp, params, method);
             
@@ -172,8 +180,11 @@ for cat = catRange
                 para = param_normalize_per_dim(params, amp_dim, length(resp));
                 
                 % note this is different - using non-normalized params
-                value_sta_prj = (sta/norm(sta))*params';
-                
+                if ~normSpace
+                    value_sta_prj = (sta/norm(sta))*params';
+                else
+                    value_sta_prj = (sta/norm(sta))*para';
+                end
                 para_sub_sta = zeros(size(para));
                 for k=1:size(para,1)
                     param_sta_prj = sta*(para(k,:)*sta')/(sta*sta'); % vector of params pojected onto STA
@@ -188,11 +199,11 @@ for cat = catRange
                 orthAx = COEFF(:,1)';
             end
             
-%             if compress_expand
-%                 std_params = std(params);
-%             else
+            if ~normSpace
                 std_params = std(params);
-%             end
+            else
+                std_params = std(para);
+            end
             
             if strcmp(method, 'linear_regression')
                 if strcmp(options.screenType, 'Face') % shape appearance screen
@@ -377,6 +388,10 @@ if compress_expand
     outPath = [outPath filesep 'compress_expand'];
 end
 
+if normSpace 
+    outpath = [outPath filesep 'withNorm'];
+end
+
 if ~exist(outPath, 'dir')
     mkdir(outPath)
 end
@@ -391,7 +406,7 @@ end
 % cell array's in python
 for cellIndex = 1:size(featMat, 1)
     if ~isempty(featMat{cellIndex, 1})
-        for st = 1:size(featMat, 2)-1
+        for st = 1:size(featMat, 2)-1 % last column is cellID
         
             currMat = featMat{cellIndex, st};
             

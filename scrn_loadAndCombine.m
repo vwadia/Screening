@@ -43,7 +43,10 @@ if strcmp(task, 'Recall_Task')
         ['Recall_Task' filesep 'P79CS' filesep 'ReScreenRecall_Session_2_20220403'],...
         ['Recall_Task' filesep 'P79CS' filesep 'ReScreenRecall_Session_3_20220405'],...
         ['Recall_Task' filesep 'P80CS' filesep 'ReScreenRecall_Session_1_20220728'],...
-        ['Recall_Task' filesep 'P80CS' filesep 'ReScreenRecall_Session_2_20220731']};    
+        ['Recall_Task' filesep 'P80CS' filesep 'ReScreenRecall_Session_2_20220731'],...
+        ['Recall_Task' filesep 'P84CS' filesep 'ReScreenRecall_Session_1_20230406'],...    
+        ['Recall_Task' filesep 'P84CS' filesep 'ReScreenRecall_Session_2_20230408'],...
+        ['Recall_Task' filesep 'P85CS' filesep 'ReScreenRecall_Session_1_20230424']};    
     
     for s = 1:length(sessID)
         basePath = [diskPath filesep sessID{s}];
@@ -62,11 +65,15 @@ elseif strcmp(task, 'ReScreen_Recall') % all afternoon neurons
         ['Recall_Task' filesep 'P80CS' filesep 'ReScreenRecall_Session_1_20220728'],...
         ['Recall_Task' filesep 'P80CS' filesep 'ReScreenRecall_Session_2_20220731'],...
         ['Object_Screening' filesep 'P81CS' filesep 'ClosedLoopReScreen_Session_1_20221030'],...
-        ['Object_Screening' filesep 'P82CS' filesep 'ClosedLoopReScreen_Session_1_20230115']};
-    
+        ['Object_Screening' filesep 'P82CS' filesep 'ClosedLoopReScreen_Session_1_20230115'],...
+        ['Recall_Task' filesep 'P84CS' filesep 'ReScreenRecall_Session_1_20230406'],...
+        ['Recall_Task' filesep 'P84CS' filesep 'ReScreenRecall_Session_2_20230408'],...
+        ['Object_Screening' filesep 'P85CS' filesep 'ClosedLoopReScreen_Session_1_20230419'],...
+        ['Recall_Task' filesep 'P85CS' filesep 'ReScreenRecall_Session_1_20230424']};   
     
     
 elseif strcmp(task, 'Object_Screening') % morning sessions only
+    
     sessID = {['Object_Screening' filesep 'P71CS' filesep 'FastObjectScreening_Session_1_20201125'],...%d
         ['Object_Screening' filesep 'P73CS' filesep 'FullParamObjScreening_Session_1_20210328' filesep '500stim'],...%d
         ['Object_Screening' filesep 'P75CS' filesep 'FingerprintScreening_Session_1_20210902'],...%d
@@ -89,8 +96,12 @@ elseif strcmp(task, 'Object_Screening') % morning sessions only
         ['Object_Screening' filesep 'P81CS' filesep 'FingerprintScreening_Session_2_20221028'],...
         ['Object_Screening' filesep 'P81CS' filesep 'ClosedLoopScreening_Session_1_20221030'],...
         ['Object_Screening' filesep 'P82CS' filesep 'FingerprintScreening_Session_1_20230111'],...
-        ['Object_Screening' filesep 'P82CS' filesep 'ClosedLoopScreening_Session_1_20230115']}; %d
-    
+        ['Object_Screening' filesep 'P82CS' filesep 'ClosedLoopScreening_Session_1_20230115'],...
+        ['Object_Screening' filesep 'P84CS' filesep 'FingerprintScreening_Session_1_20230405'],...
+        ['Recall_task' filesep 'P84CS' filesep 'RecallScreening_Session_1_20230406'],...
+        ['Recall_task' filesep 'P84CS' filesep 'RecallScreening_Session_2_20230408'],...
+        ['Object_Screening' filesep 'P85CS' filesep 'ClosedLoopScreening_Session_1_20230419'],...
+        ['Recall_task' filesep 'P85CS' filesep 'RecallScreening_Session_1_20230424']}; %d
     
 end
 
@@ -153,17 +164,28 @@ end
 
 %% Go to loadCellsComputeRampSig for sigramp computation (pvalDistribution)
 
-
 %% Saving cells recall - if you already have all cells
 % NOTE: You need to run the first couple of cells of this to get strctResp
-setDiskPaths
+
+CELLResp = struct2cell(strctResp')';
+keep = true(size(CELLResp, 1), 1);
+for ii = 1:size(CELLResp, 1)
+    
+    if isnan(CELLResp{ii, 4})
+        keep(ii) = false;
+    end
+    
+end
+strctResp = strctResp(keep);
+
 load([diskPath filesep 'Object_Screening' filesep 'AllRespITCells_Morn&AftSessions_withPDist_Scrn_500Stim.mat'])
 
 idx = zeros(length(strctCells), 1);
 
 for cellIndex = l(strctCells)
     
-    if strcmp(strctCells(cellIndex).time, 'aft') && ~strcmp(strctCells(cellIndex).SessionID, 'P81_synth') && ~strcmp(strctCells(cellIndex).SessionID, 'P82CS_CLReScreen')
+    if strcmp(strctCells(cellIndex).time, 'aft') && ~strcmp(strctCells(cellIndex).SessionID, 'P81_synth') && ~strcmp(strctCells(cellIndex).SessionID, 'P82CS_CLReScreen')...
+            && ~strcmp(strctCells(cellIndex).SessionID, 'P85CS_CLReScreen')
         idx(cellIndex) = 1;   
     end
     
@@ -174,16 +196,18 @@ strctCells(~idx) = [];
 responses(~idx, :) = [];
 psths(~idx, :) = [];
 
-%%
-% paranoia check - make sure cells are set up correctly
-% P76 Session 2 won't be but everything else should be fine
-for cellIndex = l(strctCells)
-    if ~isequal(strctResp(cellIndex).Name, strctCells(cellIndex).Name)
-        keyboard
-    end  
-end
+save([diskPath filesep task filesep 'AllRespITCells_500stim_Im'], 'strctCells', 'responses', 'psths', '-v7.3')
+save([diskPath filesep task filesep 'AllResponses_RespITCells_500Stim_Im'], 'strctResp')
 
+% % paranoia check - make sure cells are set up correctly
+% % P76 Session 2 won't be but everything else should be fine
+% for cellIndex = l(strctCells)
+%     if ~isequal(strctResp(cellIndex).Name, strctCells(cellIndex).Name)
+%         keyboard
+%     end  
+% end
 %%
+
 idx = [];
 
 % now find sigramp neurons 
@@ -195,10 +219,19 @@ for cellIndex = l(strctCells)
     idx(cellIndex) = sum(p_info < 0.01);
 end
 
-strctCells(idx ~= length(p_info)) = []; 
-responses(idx ~= length(p_info), :) = [];
-psths(idx ~= length(p_info), :) = [];
-strctResp(idx ~= length(p_info)) = [];
+% NOTE THIS CHANGE --------------------------------------------------------
+% Less Strict
+strctCells(idx < length(p_info)*0.98) = []; 
+responses(idx < length(p_info)*0.98, :) = [];
+psths(idx < length(p_info)*0.98, :) = [];
+strctResp(idx < length(p_info)*0.98) = [];
+
+% More strict
+% strctCells(idx ~= length(p_info)) = []; 
+% responses(idx ~= length(p_info), :) = [];
+% psths(idx ~= length(p_info), :) = [];
+% strctResp(idx ~= length(p_info)) = [];
+% -------------------------------------------------------------------------
 
 save([taskPath filesep 'AllITCells_500Stim_Im_SigRamp'], 'strctCells', 'responses', 'psths', '-v7.3')
 save([taskPath filesep 'AllITResponses_500Stim_Im_SigRamp'], 'strctResp', '-v7.3')

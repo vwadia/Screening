@@ -57,7 +57,7 @@ end
 for i=1:size(A,1)
     for j=1:size(A,2)
         hist=A{i,j};
-        B{i,j}=mean(hist(responses{i, 2}:responses{i, 2}+267,:),1);% Choose a time window you want to accumulate the spikes into a firing rate
+        B{i,j}=mean(hist(floor(responses{i, 2}):floor(responses{i, 2})+267,:),1);% Choose a time window you want to accumulate the spikes into a firing rate
         fir(i,j)=mean(B{i,j});  %mean firing rate
     end
 end
@@ -74,7 +74,7 @@ for i=1:size(B,1)
 end
 evn=ev00;
 % responses = responses(evn > 0.1, :);
-fr_mat = fr_mat(:, evn>0.1);
+% fr_mat = fr_mat(:, evn>0.1);
 
 %%
 tic
@@ -220,7 +220,7 @@ if n_dist == 1
     end
     
 else
-    %% line plot
+    % line plot
     Fontsize = 20;
     X = categorical({'alexnet', 'vggface', 'vgg16', 'vgg19', 'CORNet-Z', 'CORNet-S', 'CORNet-RT', 'CORNet-R', 'eigenmodel'});
     X = reordercats(X, {'alexnet', 'vggface', 'vgg16', 'vgg19', 'CORNet-Z', 'CORNet-S', 'CORNet-RT', 'CORNet-R', 'eigenmodel'});
@@ -251,9 +251,9 @@ else
     
 end
 
-print(f, filename, '-dpng', '-r0')
+% print(f, filename, '-dpng', '-r0')
 
-close all
+% close all
 
 
 

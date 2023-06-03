@@ -30,6 +30,9 @@ elseif strcmp(task, 'Recall_Task')
     load([diskPath filesep 'Recall_Task' filesep 'AllITResponses_500stim_Im_SigRamp']);
 %     load([diskPath filesep 'Recall_Task' filesep 'AllCells_500stim_Im']);
 %     load([diskPath filesep 'Recall_Task' filesep 'AllResponses_500stim_Im']);
+ 
+    load([diskPath filesep 'Recall_Task' filesep 'SigRampCellsthatReactivate_alpha0.05.mat'])
+
     taskPath = [taskPath filesep 'forPaper'];
     if ~exist(taskPath)
         mkdir([taskPath]);
@@ -37,6 +40,14 @@ elseif strcmp(task, 'Recall_Task')
 end
 strctCELL = struct2cell(strctCells');
 strctCELL = strctCELL';
+
+ovrlap = ~ovrlap;
+if exist('ovrlap', 'var')
+    strctCells = strctCells(ovrlap);
+    responses = responses(ovrlap, :);
+    psths = psths(ovrlap, :);
+    strctResp = strctResp(ovrlap);
+end
 
 
 % cleave out garbage neurons - improves things
@@ -219,7 +230,7 @@ if exist('f_r_hist', 'var')
     f_r_s_hist = f_r_hist;
     f_r_os_hist = f_r_o_hist;
 end
-binsize = 2;
+binsize = 3;
 for cellIndex = 1:length(strctCells)
     f_r_s(cellIndex, :) = Utilities.Smoothing.fastsmooth(f_r(cellIndex, :), binsize, 1, 1);
     f_r_os(cellIndex, :) = Utilities.Smoothing.fastsmooth(f_r_o(cellIndex, :), binsize, 1, 1);
@@ -240,9 +251,9 @@ meanfr = mean(f_r_s, 1);
 
 %% make heat plot - make this a function 
 useSmoothed = 1;
-avgCells = 1;
-% ax2plot = 'sta';
-ax2plot = 'ortho';
+avgCells = 0;
+ax2plot = 'sta';
+% ax2plot = 'ortho';
 
 
 f = figure; 
@@ -359,10 +370,16 @@ elseif exist('right', 'var') && right
     filename = [filename '_RightIT'];
 
 end
-filename = [filename '_forPaper'];
+if exist('ovrlap', 'var')
+    filename = [filename '_reactivatedCells'];
 
+end
+
+% filename = [filename '_forPaper'];
+% filename = [filename '_P84CS'];
 % print(f, filename, '-dpng', '-r0');
 % close all
+
 
 %% histogram of slopes 
 
@@ -429,185 +446,199 @@ for ax = 1:numOfAxes
     
 end
 
+% if strcmp(task, 'Recall_Task')
+%     save([taskPath filesep 'AxisProj_ImResponse_corr_bothAxes'], 'cc');
+% end
 
 
+%% EVERYTHING BELOW HERE CAN BE PLOTTED BY RECALL.compute_corr_ProjvsFR
 %% trying to make mirrored histogram
 % histogram
 % -0.3:0.04:0.4 binedges best vis so far
-
-% test if distributions are significantly different 
-[h, p] = kstest2(slopes_pref, slopes_ortho);
- mirrored = 0;
-
-f = figure; 
-hold on; 
-
-if ~mirrored
-%     histogram(slopes_ortho, 'BinEdges', -0.3:0.04:0.4)
-%     histogram(slopes_pref, 'BinEdges', -0.3:0.04:0.4)
-    histogram(slopes_ortho)
-    histogram(slopes_pref)
-    x_lim = xlim;
-    y_lim = ylim;
-    filename = [taskPath filesep 'SlopesComaprison_BestFitLines_STAvsOrtho'];
-
-else
-    h1 = axes;
-    histogram(h1, slopes_ortho, 'BinEdges', -0.3:0.04:0.4, 'FaceColor', [0 0.4470 0.7410])
-    set(h1, 'YDir', 'reverse')
-    set(h1, 'YAxisLocation', 'Right')
-    set(h1, 'Xtick', []);
-    set(h1, 'Ytick', []);
-    
-    ylim([-10 10])
-    
-    h2 = axes;
-    histogram(h2, slopes_pref, 'BinEdges', -0.3:0.04:0.4, 'FaceColor', [0.4940 0.1840 0.5560])
-    % set(h2, 'XLim', get(h1,'Xlim'))
-    set(h2, 'Color', 'None')
-    % set(h2, 'Xtick', []);
-    ylim([-10 10])
-    x_lim = xlim;
-    
-    filename = [taskPath filesep 'SlopesComaprison_BestFitLines_STAvsOrtho_mirrored'];
-
-end
-text(x_lim(1)*0.80, y_lim(2)*0.88, ['p = ' num2str(p)], 'FontSize', 14,'FontWeight', 'bold');
-lgnd = legend({'Ortho axis', 'Preferred axis'});
-xlabel('Slope of best fit line');
-ylabel('No of neurons');
-title({['Slopes of best fit lines - STA and Orthogonal axes'], 'Standardized FR'})
-set(gca, 'FontSize', 14, 'FontWeight', 'bold');
-% print(f, filename, '-dpng', '-r0')
-% close all
-
-
-
-
-%% correlation histogram
-f = figure; 
-hold on; 
-histogram(cc(:, 2), 'BinEdges', -1:0.1:1) % ortho
-histogram(cc(:, 1), 'BinEdges', -1:0.1:1) % pref
-
-% test if distributions are significantly different 
-[h, p] = kstest2(cc(:, 1), cc(:, 2));
-
-
-x_lim = xlim;
-% ylim([0 15])
-y_lim = ylim;
-text(x_lim(1)*0.80, y_lim(2)*0.88, ['p = ' num2str(p)], 'FontSize', 14,'FontWeight', 'bold');
-lgnd = legend({'Ortho axis', 'Preferred axis'});
-xlabel('Correlation value');
-ylabel('No of neurons');
-title({'Correlation of projection value vs firing rate', 'STA and Orthogonal axes'})
-set(gca, 'FontSize', 14, 'FontWeight', 'bold');
-filename = [taskPath filesep 'CorrProjNormValvsFR_STAvsOrtho'];
-% print(f, filename, '-dpng', '-r0')
-% close all
-
-
-%% cdfs - Slopes 
-
-e_cdf = 0;
-f = figure; 
-hold on; 
-
-if e_cdf
-    % % ecdf with bounds - try to make this work
-    ecdf(slopes_ortho, 'Bounds', 'on'); % ortho
-    ecdf(slopes_pref, 'Bounds', 'on');% pref
-    grid on
-    % plot(f1, x1, 'LineWidth', 2);
-    % plot(f2, x2, 'LineWidth', 2);
-    
-else
-    cd1 = cdfplot(slopes_ortho);
-    cd2 = cdfplot(slopes_pref);
-    cd1.LineWidth = 2;
-    cd2.LineWidth = 2;
-end
-% test if distributions are significantly different 
-[h, p] = kstest2(slopes_ortho, slopes_pref);
-
-
-x_lim = xlim;
-% ylim([0 15])
-y_lim = ylim;
-text(x_lim(1)*0.80, y_lim(2)*0.88, ['p = ' num2str(p)], 'FontSize', 14,'FontWeight', 'bold');
-
-if e_cdf
-    lgnd = legend({'Ortho axis','', '', 'Preferred axis','', ''});
-    filename = [taskPath filesep 'ECDFBestFitSlope_STAvsOrtho'];
-
-else
-    lgnd = legend({'Ortho axis','Preferred axis'});
-    filename = [taskPath filesep 'CDFBestFitSlope_STAvsOrtho'];
-
-end
-lgnd.Position = [0.200892857142857,0.684523809523811,0.224107142857143,0.08452380952381];
-xlabel('x = Slope of best fit line');
+% 
+% % test if distributions are significantly different 
+% [h, p] = kstest2(slopes_pref, slopes_ortho);
+%  mirrored = 0;
+% 
+% f = figure; 
+% hold on; 
+% 
+% if ~mirrored
+% %     histogram(slopes_ortho, 'BinEdges', -0.3:0.04:0.4)
+% %     histogram(slopes_pref, 'BinEdges', -0.3:0.04:0.4)
+%     histogram(slopes_ortho)
+%     histogram(slopes_pref)
+%     x_lim = xlim;
+%     y_lim = ylim;
+%     filename = [taskPath filesep 'SlopesComaprison_BestFitLines_STAvsOrtho'];
+% 
+% else
+%     h1 = axes;
+%     histogram(h1, slopes_ortho, 'BinEdges', -0.3:0.04:0.4, 'FaceColor', [0 0.4470 0.7410])
+%     set(h1, 'YDir', 'reverse')
+%     set(h1, 'YAxisLocation', 'Right')
+%     set(h1, 'Xtick', []);
+%     set(h1, 'Ytick', []);
+%     
+%     ylim([-10 10])
+%     
+%     h2 = axes;
+%     histogram(h2, slopes_pref, 'BinEdges', -0.3:0.04:0.4, 'FaceColor', [0.4940 0.1840 0.5560])
+%     % set(h2, 'XLim', get(h1,'Xlim'))
+%     set(h2, 'Color', 'None')
+%     % set(h2, 'Xtick', []);
+%     ylim([-10 10])
+%     x_lim = xlim;
+%     
+%     filename = [taskPath filesep 'SlopesComaprison_BestFitLines_STAvsOrtho_mirrored'];
+% 
+% end
+% text(x_lim(1)*0.80, y_lim(2)*0.88, ['p = ' num2str(p)], 'FontSize', 14,'FontWeight', 'bold');
+% lgnd = legend({'Ortho axis', 'Preferred axis'});
+% xlabel('Slope of best fit line');
 % ylabel('No of neurons');
-title({'Correlation of projection value vs firing rate', 'STA and Orthogonal axes'})
-set(gca, 'FontSize', 14, 'FontWeight', 'bold');
-
-
-% print(f, filename, '-dpng', '-r0')
-
-
-
-%% cdfs - correlation
-
-e_cdf = 0;
-f = figure; 
-hold on; 
-
-if e_cdf
-    % % ecdf with bounds - try to make this work
-    e1 = ecdf(cc(:, 2), 'Bounds', 'on'); % ortho
-    e2 = ecdf(cc(:, 1), 'Bounds', 'on');% pref
-    grid on
-%     plot(e1, x1, 'LineWidth', 2);
-%     plot(e2, x2, 'LineWidth', 2);
-    
-else
-    cd1 = cdfplot(cc(:, 2));
-    cd2 = cdfplot(cc(:, 1));
-    cd1.LineWidth = 2;
-    cd2.LineWidth = 2;
-
-    [c_p, x_p, ~, ~, ~] = cdfcalc(cc(:, 1));
-    [c_o, x_o, ~, ~, ~] = cdfcalc(cc(:, 2));
-end
-% test if distributions are significantly different 
-[h, p] = kstest2(cc(:, 1), cc(:, 2));
-
-
-x_lim = xlim;
-% ylim([0 15])
-y_lim = ylim;
-text(x_lim(1)*0.80, y_lim(2)*0.88, ['p = ' num2str(p)], 'FontSize', 14,'FontWeight', 'bold');
-
-if e_cdf
-    lgnd = legend({'Ortho axis','', '', 'Preferred axis','', ''});
-    filename = [taskPath filesep 'ECDFProjvsFR_STAvsOrtho'];
-
-else
-    lgnd = legend({'Ortho axis','Preferred axis'});
-    filename = [taskPath filesep 'CDFProjvsFR_STAvsOrtho'];
-
-end
-lgnd.Position = [0.200892857142857,0.684523809523811,0.224107142857143,0.08452380952381];
-xlabel('x = Correlation value');
+% title({['Slopes of best fit lines - STA and Orthogonal axes'], 'Standardized FR'})
+% set(gca, 'FontSize', 14, 'FontWeight', 'bold');
+% % print(f, filename, '-dpng', '-r0')
+% % close all
+% 
+% 
+% 
+% 
+% %% correlation histogram
+% f = figure; 
+% hold on; 
+% histogram(cc(:, 2), 'BinEdges', -1:0.1:1) % ortho
+% histogram(cc(:, 1), 'BinEdges', -1:0.1:1) % pref
+% 
+% % test if distributions are significantly different 
+% [h, p] = kstest2(cc(:, 1), cc(:, 2));
+% 
+% 
+% x_lim = xlim;
+% % ylim([0 15])
+% y_lim = ylim;
+% text(x_lim(1)*0.80, y_lim(2)*0.88, ['p = ' num2str(p)], 'FontSize', 14,'FontWeight', 'bold');
+% lgnd = legend({'Ortho axis', 'Preferred axis'});
+% xlabel('Correlation value');
 % ylabel('No of neurons');
-title({'Correlation of projection value vs firing rate', 'STA and Orthogonal axes'})
-set(gca, 'FontSize', 14, 'FontWeight', 'bold');
-
-
-% print(f, filename, '-dpng', '-r0')
-
-
+% title({'Correlation of projection value vs firing rate', 'STA and Orthogonal axes'})
+% set(gca, 'FontSize', 14, 'FontWeight', 'bold');
+% filename = [taskPath filesep 'CorrProjNormValvsFR_STAvsOrtho'];
+% % print(f, filename, '-dpng', '-r0')
+% % close all
+% 
+% 
+% %% cdfs - Slopes 
+% 
+% e_cdf = 0;
+% f = figure; 
+% hold on; 
+% 
+% if e_cdf
+%     % % ecdf with bounds - try to make this work
+%     ecdf(slopes_ortho, 'Bounds', 'on'); % ortho
+%     ecdf(slopes_pref, 'Bounds', 'on');% pref
+%     grid on
+%     % plot(f1, x1, 'LineWidth', 2);
+%     % plot(f2, x2, 'LineWidth', 2);
+%     
+% else
+%     cd1 = cdfplot(slopes_ortho);
+%     cd2 = cdfplot(slopes_pref);
+%     cd1.LineWidth = 2;
+%     cd2.LineWidth = 2;
+% end
+% % test if distributions are significantly different 
+% [h, p] = kstest2(slopes_ortho, slopes_pref);
+% 
+% 
+% x_lim = xlim;
+% % ylim([0 15])
+% y_lim = ylim;
+% text(x_lim(1)*0.80, y_lim(2)*0.88, ['p = ' num2str(p)], 'FontSize', 14,'FontWeight', 'bold');
+% 
+% if e_cdf
+%     lgnd = legend({'Ortho axis','', '', 'Preferred axis','', ''});
+%     filename = [taskPath filesep 'ECDFBestFitSlope_STAvsOrtho'];
+% 
+% else
+%     lgnd = legend({'Ortho axis','Preferred axis'});
+%     filename = [taskPath filesep 'CDFBestFitSlope_STAvsOrtho'];
+% 
+% end
+% lgnd.Position = [0.200892857142857,0.684523809523811,0.224107142857143,0.08452380952381];
+% xlabel('x = Slope of best fit line');
+% % ylabel('No of neurons');
+% if strcmp(task, 'Recall_Task')
+%     title({'Correlation of projection value vs firing rate', 'STA and Orthogonal axes', 'Imagination'})
+% elseif  strcmp(task, 'Object_Screening')
+%     title({'Correlation of projection value vs firing rate', 'STA and Orthogonal axes', 'Viewing'})
+% end
+% 
+% set(gca, 'FontSize', 14, 'FontWeight', 'bold');
+% 
+% 
+% % print(f, filename, '-dpng', '-r0')
+% 
+% 
+% 
+% %% cdfs - correlation
+% 
+% e_cdf = 0;
+% f = figure; 
+% hold on; 
+% 
+% if e_cdf
+%     % % ecdf with bounds - try to make this work
+%     e1 = ecdf(cc(:, 2), 'Bounds', 'on'); % ortho
+%     e2 = ecdf(cc(:, 1), 'Bounds', 'on');% pref
+%     grid on
+% %     plot(e1, x1, 'LineWidth', 2);
+% %     plot(e2, x2, 'LineWidth', 2);
+%     
+% else
+%     cd1 = cdfplot(cc(:, 2));
+%     cd2 = cdfplot(cc(:, 1));
+%     cd1.LineWidth = 2;
+%     cd2.LineWidth = 2;
+% 
+%     [c_p, x_p, ~, ~, ~] = cdfcalc(cc(:, 1));
+%     [c_o, x_o, ~, ~, ~] = cdfcalc(cc(:, 2));
+% end
+% % test if distributions are significantly different 
+% [h, p] = kstest2(cc(:, 1), cc(:, 2));
+% 
+% 
+% x_lim = xlim;
+% % ylim([0 15])
+% y_lim = ylim;
+% text(x_lim(1)*0.80, y_lim(2)*0.88, ['p = ' num2str(p)], 'FontSize', 14,'FontWeight', 'bold');
+% 
+% if e_cdf
+%     lgnd = legend({'Ortho axis','', '', 'Preferred axis','', ''});
+%     filename = [taskPath filesep 'ECDFProjvsFR_STAvsOrtho'];
+% 
+% else
+%     lgnd = legend({'Ortho axis','Preferred axis'});
+%     filename = [taskPath filesep 'CDFProjvsFR_STAvsOrtho'];
+% 
+% end
+% lgnd.Position = [0.178125002980232,0.616666668156784,0.291071422610964,0.110714282734053];
+% xlabel('x = Correlation value');
+% % ylabel('No of neurons');
+% 
+% if strcmp(task, 'Recall_Task')
+%     title({'Correlation of projection value vs firing rate', 'STA and Orthogonal axes', 'Imagination'})
+% elseif  strcmp(task, 'Object_Screening')
+%     title({'Correlation of projection value vs firing rate', 'STA and Orthogonal axes', 'Viewing'})
+% end
+% set(gca, 'FontSize', 14, 'FontWeight', 'bold');
+% 
+% 
+% % print(f, filename, '-dpng', '-r0')
+% 
+% 
 
 
 

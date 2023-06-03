@@ -18,6 +18,7 @@ elseif strcmp(taskPath, 'Recall_Task')
     load([diskPath filesep taskPath filesep 'AllITCells_500Stim_Im_SigRamp'])
 end
 
+% pathOut = [diskPath filesep taskPath filesep 'forPaper' filesep 'STA_and_projections_varWindow_sigCells_4096D'];
 pathOut = [diskPath filesep taskPath filesep 'forPaper' filesep 'STA_and_projections_varWindow_sigCells'];
 if ~exist(pathOut)
     mkdir([pathOut]);
@@ -25,6 +26,8 @@ end
 
 
 %%
+% layermat = 'fc6'; stimDir = '500Stimuli';
+% load([diskPath filesep 'ObjectSpace' filesep stimDir filesep ['params_AlexnetPYTHON_MatlabMean_' layermat '_' stimDir '.mat']]); params = feat;
 
 load([diskPath filesep 'ObjectSpace' filesep '500Stimuli' filesep 'params_Alexnet_fc6_500Stimuli.mat']); % will create params = 500x50
 
@@ -42,7 +45,7 @@ options.recalledCols = [1 0.5 0;...% orange
     0 0 0];% white 
 
 %%
-for cellIndex = l(strctCells)
+for cellIndex = 88:length(strctCells)
 
     if strcmp(taskPath, 'Recall_Task')
         if strcmp(strctCells(cellIndex).SessionID, 'P76CSRec_ReScreen') || strcmp(strctCells(cellIndex).SessionID, 'P76CSFast_2')
@@ -53,7 +56,6 @@ for cellIndex = l(strctCells)
             options.recalled_stim = [54 129 130 186 270 449]; % P76 Recall 2
         elseif  strcmp(strctCells(cellIndex).SessionID, 'P76CSRec_ReScreen_3') || strcmp(strctCells(cellIndex).SessionID, 'P76CS_RecScreen_3')
             options.marked_positions = [175 107 345 340 476 459 499 496]; % P76 Recall 3
-            % options.recalled_stim = [230 344 81 45 135 181 44 18]; % P76 Recall 3
             options.recalled_stim = [18 44 45 81 135 181 230 344];
         elseif  strcmp(strctCells(cellIndex).SessionID, 'P79CS_1') || strcmp(strctCells(cellIndex).SessionID, 'P79CS_ReScreen_1')
             options.marked_positions = [3 104 167 196 422 453 473 491];
@@ -70,7 +72,16 @@ for cellIndex = l(strctCells)
         elseif strcmp(strctCells(cellIndex).SessionID, 'P80CS_RecScreen_2') || strcmp(strctCells(cellIndex).SessionID, 'P80CS_ReScreecRecall_2')
             options.marked_positions = [134 257 454 466 488 492 498 499];
             options.recalled_stim = [55 88 148 251 256 274 285 365];
-        end
+        elseif strcmp(strctCells(cellIndex).SessionID, 'P84CS_RecScreen_1') || strcmp(strctCells(cellIndex).SessionID, 'P84CS_ReScreenRecall_1')
+            options.marked_positions = [144   175   260   281   325   387   466   478];
+            options.recalled_stim = [68 121 243 261 281 308 415 434];
+        elseif strcmp(strctCells(cellIndex).SessionID, 'P84CS_RecScreen_2') || strcmp(strctCells(cellIndex).SessionID, 'P84CS_ReScreenRecall_2')
+            options.marked_positions = [18   191   297   329   379   466   471   483];
+            options.recalled_stim = [52 141 195 223 238 351 399 482];
+        elseif strcmp(strctCells(cellIndex).SessionID, 'P85CS_RecScreen_1') || strcmp(strctCells(cellIndex).SessionID, 'P85CS_ReScreenRecall')
+            options.marked_positions = [ 4   160   306   329   387   397   497   500];
+            options.recalled_stim = [7 11 99 153 201 251 355 486];
+        end  
      end
     
     

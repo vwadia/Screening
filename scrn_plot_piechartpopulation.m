@@ -25,7 +25,7 @@ elseif strcmp(host(1:end-1), 'Varuns-iMac-2.local')
     diskPath = '/Volumes/T7/SUAnalysis';
 end
 
-load([diskPath filesep 'Object_Screening' filesep 'ITRespCells_500stim_Scrn'])
+load([diskPath filesep 'Object_Screening' filesep 'AllMergedRespITCells_withPDist_Scrn_500Stim'])
 
 
 %%
@@ -357,17 +357,26 @@ close all
 % non_resp cells - 99
 % ramp cells - 165
 % non ramp cells - 70
+setDiskPaths
+
+Total_merged_cells = 440; % note this is a guestimate
+% load all resp neurons
+load([diskPath filesep 'Object_Screening' filesep 'AllMergedRespITCells_withPDist_Scrn_500Stim'])
+respCells = length(strctCells);
+
+load([diskPath filesep 'Object_Screening' filesep 'MergedITCells_500Stim_Scrn_SigRamp'])
+sigRampCells = length(strctCells);
 
 
 % create vectors of categorical labels
-pieData = [165 70 99];
+pieData = [sigRampCells respCells-sigRampCells Total_merged_cells-respCells];
 % cats = {};
 % for i = 1:length(pieData)
 %     cats = horzcat(cats, repmat(labels(i), [1 pieData(i)]));
 % end
-
+%%
 fig = figure; 
-set(gcf,'Position',get(0,'Screensize'))
+% set(gcf,'Position',get(0,'Screensize'))
 
 colormap bone
 explode = [1 1 1];
@@ -375,21 +384,29 @@ explode = [1 1 1];
 % explode = [1 1 1 1 1];
 
 % labels = {'Faces (26.04%)','Text (5.92%)', 'Plants/fruits (5.33%)' ,'Animals (23.67%)', 'Objects (39.05%)'};
-labels = {'Sig Ramp Tuned (49.40%)','Responsive only (20.90%)','Neither (29.85%)'};
+txt1 = ['Sig Ramp Tuned'  '(' num2str((sigRampCells/Total_merged_cells)*1e2,' %.2f') '%)'];
+txt2 = ['Responsive only' '(' num2str(((respCells-sigRampCells)/Total_merged_cells)*1e2,' %.2f') '%)'];
+txt3 = ['Neither' '(' num2str(((Total_merged_cells-respCells)/Total_merged_cells)*1e2, ' %.2f') '%)'];
+
+labels = {txt1, txt2, txt3};
+
+pos(1, :) = [0.15864406779661,1.114576271186441,0];
+pos(2, :) = [0.211229540688194,-1.167055515514338,0];
+pos(3, :) = [1.167055515514336,1.032924455942432,0];
+
+
 apple = pie(pieData,explode, labels) 
 for i = 2:2:length(apple)
     txt = apple(i);
-    txt.FontSize = 20;
+%     txt.Position = pos(i/2);
+    txt.FontSize = 14;
     txt.FontWeight = 'Bold';
 end
 % apple(8).Position = [0.55 1.1 0]; % manual lebal adjustment
 
 % print(fig, [diskPath filesep 'Screening_Resp_Cells_pie_chart'], '-dpng', '-r0')
-print(fig, [diskPath filesep taskPath filesep 'Ramp_cells_pie_chart'], '-dpng', '-r0')
-close all
-
-
-
+% print(fig, [diskPath filesep 'Object_Screening' filesep 'Ramp_cells_pie_chart'], '-dpng', '-r0')
+% close all
 
 
 

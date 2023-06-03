@@ -14,13 +14,24 @@
 
 setDiskPaths
 
-taskPath = 'Object_Screening';
-patID = 'P82CS';
-m_sessPath = [diskPath filesep taskPath filesep 'P82CS' filesep 'ClosedLoopScreening_Session_1_20230115'];
-a_sessPath = [diskPath filesep taskPath filesep 'P82CS' filesep 'ClosedLoopReScreen_Session_1_20230115'];
+% taskPath = 'Object_Screening';
+% patID = 'P82CS';
+% m_sessPath = [diskPath filesep taskPath filesep 'P82CS' filesep 'ClosedLoopScreening_Session_1_20230115'];
+% a_sessPath = [diskPath filesep taskPath filesep 'P82CS' filesep 'ClosedLoopReScreen_Session_1_20230115'];
+% stimPath = [a_sessPath filesep 'genStimOnly'];
 
+% taskPath = 'Object_Screening';
+% patID = 'P85CS';
+% m_sessPath = [diskPath filesep taskPath filesep 'P85CS' filesep 'ClosedLoopScreening_Session_1_20230419'];
+% a_sessPath = [diskPath filesep taskPath filesep 'P85CS' filesep 'ClosedLoopReScreen_Session_1_20230419'];
+% stimPath = [a_sessPath filesep 'GridTif'];
 
-stimPath = [a_sessPath filesep 'genStimOnly'];
+taskPath = 'Recall_Task';
+patID = 'P85CS';
+m_sessPath = [diskPath filesep taskPath filesep 'P85CS' filesep 'RecallScreening_Session_1_20230424'];
+a_sessPath = [diskPath filesep taskPath filesep 'P85CS' filesep 'ReScreenRecall_Session_1_20230424'];
+stimPath = [a_sessPath filesep 'GridTif'];
+
     
 load([a_sessPath filesep 'SynthPsthandResponses'])
 a_strctCells = load([a_sessPath filesep 'strctCells']);
@@ -45,7 +56,19 @@ if strcmp(patID, 'P82CS')
     stepRange = [-n_steps:1:n_steps]*scale;
     nbin = 10;
     
-    greyImsOnly = 1; % only black and white images
+    greyImsOnly = 0; % only black and white images
+elseif strcmp(patID, 'P85CS')
+    
+    morn_cells = [1419];
+    aft_matches = [1539];
+    aft_idx = [1];
+    n_steps = 5;
+    n_steps_ortho = 5; % set per session
+    nbin = 10;
+    scale = 1.2;
+    stepRangeOrtho = round([-n_steps_ortho:1:n_steps_ortho]*scale, 2);
+    stepRange = round([-n_steps:1:n_steps]*scale, 2);
+    greyImsOnly = 0; % only black and white images
 end
 
 fullImDir = Utilities.readInFiles(stimPath);
@@ -60,6 +83,7 @@ for cellIndex = 1:length(aft_matches)
     % images corresponding to that cell
     cellIms = cellfun(@(x) strcmp(x(7:7+numel(num2str(mornCell))-1), num2str(mornCell)), fullImDirCell(:, 1), 'UniformOutput', false);
     
+    
     idx = structfind(a_strctCells.strctCells, 'Name', aft_matches(cellIndex));
     
     if ~isempty(synthResponses{idx, 1})
@@ -72,8 +96,15 @@ for cellIndex = 1:length(aft_matches)
         % note I'm searching imNames because those are already images for
         % just that cell and going from dashpos+1 to dashpos+4 because I'm
         % not recomputing dashpos for every name
-        dashpos = strfind(imNames{1}, '_');       
-        cellGridIms = cellfun(@(x) strcmp(x(dashpos(1)+1:dashpos(1)+4), 'Grid'), imNames, 'UniformOutput', false); 
+        if strcmp(patID, 'P82CS')
+            dashpos = strfind(imNames{1}, '_');
+            cellGridIms = cellfun(@(x) strcmp(x(dashpos(1)+1:dashpos(1)+4), 'Grid'), imNames, 'UniformOutput', false);
+            
+        elseif strcmp(patID, 'P85CS')
+            dashpos = strfind(imNames{21}, '_');
+            cellGridIms = cellfun(@(x) strcmp(x(dashpos(2)+1:dashpos(2)+4), 'Grid'), imNames, 'UniformOutput', false);
+            
+        end
         
         imNames = imNames(cell2mat(cellGridIms));
          % only responses to grid images (for now)
@@ -123,8 +154,8 @@ for cellIndex = 1:length(aft_matches)
         dot_color(:,3) = 1- dot_color(:,1);
         dot_size = 20;
         
-        x = x(reorder_ind);
-        y = y(reorder_ind);
+        x = round(x(reorder_ind), 2);
+        y = round(y(reorder_ind), 2);
         
         dot_color = dot_color(reorder_ind, :);
         
@@ -165,7 +196,7 @@ for cellIndex = 1:length(aft_matches)
 
         
         linkaxes([h1, h2], 'x');
-        linkaxes([h2, h3], 'y');
+%         linkaxes([h2, h3], 'y');
         
         % shuffled control for sta
         n_repeats = 1000;
@@ -197,9 +228,9 @@ for cellIndex = 1:length(aft_matches)
             filename = [a_sessPath filesep  '2DGrid_' patID '_Cell_' num2str(aft_matches(cellIndex)) '_ColoredIms'];   
         end
         
-        print(f, filename, '-dpng', '-r0')
-
-        close all
+%         print(f, filename, '-dpng', '-r0')
+% 
+%         close all
     end
     
 end

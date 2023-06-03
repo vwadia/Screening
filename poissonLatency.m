@@ -31,18 +31,18 @@ timelimits = [-0.17 0.53]; %sec
 stimDur = 267;
 
 %% for response latency testing - cells with weird psths that this alg should get 
-% % 
-% weirdCells = [2150 4516 949 1056 1383 3762 1087 661 713 1905 1912 782 204 1755 3178 625 651 1036 1981];
-% allCells = cell2mat(strctCELL(:, 1));
 % 
-% weirdIds = find(allCells == weirdCells);
-% weirdIds = mod(weirdIds, length(strctCells));
-% 
-% weirdIds(weirdIds == 0) = length(strctCells); 
-% 
-% strctCells = strctCells(weirdIds); 
-% psths = psths(weirdIds, :);
-% responses = responses(weirdIds, :);
+weirdCells = [2150 4516 949 1056 1383 3762 1087 661 713 1905 1912 782 204 1755 3178 625 651 1036 1981];
+allCells = cell2mat(strctCELL(:, 1));
+
+weirdIds = find(allCells == weirdCells);
+weirdIds = mod(weirdIds, length(strctCells));
+
+weirdIds(weirdIds == 0) = length(strctCells); 
+
+strctCells = strctCells(weirdIds); 
+psths = psths(weirdIds, :);
+responses = responses(weirdIds, :);
 
 
 

@@ -50,7 +50,7 @@ end
 for i=1:size(A,1)
     for j=1:size(A,2)
         hist=A{i,j};
-        B{i,j}=mean(hist(responses{i, 2}:responses{i, 2}+267,:),1);% Choose a time window you want to accumulate the spikes into a firing rate
+        B{i,j}=mean(hist(floor(responses{i, 2}):floor(responses{i, 2})+267,:),1);% Choose a time window you want to accumulate the spikes into a firing rate
         fir(i,j)=mean(B{i,j});  %mean firing rate
     end
 end

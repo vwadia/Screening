@@ -2,8 +2,8 @@
 %% load in data
 
 setDiskPaths
-% task = 'Object_Screening';
-task = 'Recall_Task';
+task = 'Object_Screening';
+% task = 'Recall_Task';
 taskPath = [diskPath filesep task filesep 'forPaper'];
 if ~exist(taskPath)
     mkdir([taskPath]);
@@ -78,7 +78,7 @@ if strcmp(task, 'Recall_Task')
     options.nbins = 4;
     
     Im_resp = [];
-    for cellIndex = l(strctCells)
+    for cellIndex = 1:length(strctCells)
         xvals = [xvals strctCells(cellIndex).Im_xvals];
         yvals = [yvals; strctCells(cellIndex).Im_yvals];
         
@@ -94,7 +94,7 @@ elseif strcmp(task, 'Object_Screening')
     options.screenType = 'Object';
     options.ind_train = [1:500]';
     s_resp = [];
-    for cellIndex = l(strctCells)
+    for cellIndex = 1:length(strctCells)
         
         cellresp = responses{cellIndex, 1};
 
@@ -168,18 +168,26 @@ filename = [taskPath filesep 'RampSummaryAxisProj_AllCells_Im'];
 % print(f, filename, '-dpng', '-r0');
 
 %% Shuffle distribution along each axis - imagination
-
+loadedCorr = false;
+if strcmp(task, 'Recall_Task')
+    cellCorr = load([diskPath filesep task filesep 'AxisProj_ImResponse_corr_bothAxes']);
+    loadedCorr = true;
+end
 % ortho
 f = figure; hold on; 
 h = histogram(cc_ortho_rand, -1:0.1:1); 
 h.FaceColor = [1 1 1]; 
-plot([cc_ortho cc_ortho], [0 500], 'LineWidth', 2, 'Color', 'r'); 
-text(.3, 1000, num2str(p_ortho, 'p = %.3f'))
-
+if ~loadedCorr
+    plot([cc_ortho cc_ortho], [0 length(cc_ortho_rand)*0.2], 'LineWidth', 2, 'Color', 'r');
+else
+    plot([mean(cellCorr.cc(:, 2)) mean(cellCorr.cc(:, 2))], [0 length(cc_ortho_rand)*0.2], 'LineWidth', 2, 'Color', 'r');
+end
 if strcmp(task, 'Recall_Task')
     title({'Correlation of imagined responses and projection value', 'Orthogonal axis'})
+    text(.3, 400, num2str(p_ortho, 'p = %.3f'), 'FontSize', 14, 'FontWeight', 'bold')
 elseif  strcmp(task, 'Object_Screening')
     title({'Correlation of viewed responses and projection value', 'Orthogonal axis'})
+    text(.3, 400, num2str(p_ortho, 'p = %.3f'), 'FontSize', 14, 'FontWeight', 'bold')
 end
 ylabel('Bin count');
 xlabel('Correlation value'); 
@@ -188,7 +196,7 @@ filename = [taskPath filesep 'RampSummaryAxisProj_AllCells_OrthoAxCorr']
 filename = [filename '_' lbl];
 % print(f, filename, '-dpng', '-r0');
 
-
+%%
 
 % sta
 f = figure; hold on;
@@ -196,13 +204,14 @@ h = histogram(cc_rand,-1:0.01:1);
 h.FaceColor = [1 1 1];
 hold on;
 if strcmp(task, 'Recall_Task')
-    plot([cc cc],[0 50], 'LineWidth', 2, 'Color', 'r');
-    text(.2, 100, num2str(p,'p = %.3f'))
+%     plot([cc cc],[0 50], 'LineWidth', 2, 'Color', 'r');
+    plot([mean(cellCorr.cc(:, 1)) mean(cellCorr.cc(:, 1))],[0 50], 'LineWidth', 2, 'Color', 'r');
+    text(.2, 100, num2str(p,'p = %.3f'), 'FontSize', 14, 'FontWeight', 'bold')
     title({'Correlation of imagined responses and projection value', 'Preferred axis'})
     
 elseif strcmp(task, 'Object_Screening')
-    plot([cc cc],[0 500], 'LineWidth', 2, 'Color', 'r');
-    text(.2, 1000, num2str(p,'p = %.3f'))
+    plot([cc cc],[0 length(cc_rand)*0.1], 'LineWidth', 2, 'Color', 'r');
+    text(.2, 400, num2str(p,'p = %.3f'), 'FontSize', 14, 'FontWeight', 'bold')
     title({'Correlation of viewed responses and projection value', 'Preferred axis'})
     
 end
@@ -226,7 +235,7 @@ elseif strcmp(axis, 'ortho')
     sf_r_o = zeros(length(strctCells), 8);
 end
 
-for cellIndex = l(strctCells)
+for cellIndex = 1:length(strctCells)
      if strcmp(axis, 'STA')
         crds = strctCells(cellIndex).Im_xvals;
         

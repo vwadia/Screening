@@ -22,6 +22,9 @@ index = cell2mat(cellfun(@isnan, m_responses(:, 2), 'UniformOutput', false));
 m_responses(index(:, 1), :) = [];
 m_psths(index(:, 1), :) = [];
 m_strctCells(index(:, 1)) = [];
+for cm = 1:length(m_strctCells)   
+    m_strctCells(cm).time = 'morn';
+end
 
 %
 % all cells - afternoon. Note that this will reset 'responses'/'psths'/'strctCells'
@@ -40,35 +43,25 @@ index = cell2mat(cellfun(@isnan, a_responses(:, 2), 'UniformOutput', false));
 a_responses(index(:, 1), :) = [];
 a_psths(index(:, 1), :) = [];
 a_strctCells(index(:, 1)) = [];
+for ca = 1:length(a_strctCells)
+    a_strctCells(ca).time = 'aft'; 
+end
 
 strctCells = [m_strctCells a_strctCells];
 psths = [m_psths; a_psths];
 responses = [m_responses(:, 1:3); a_responses(:, 1:3)];
 
-%% adding time field 
-% 
-% for cm = 1:length(m_strctCells)
-%     
-%     m_strctCells(cm).time = 'morn';
-%     
-% end
-% 
-% for ca = 1:length(a_strctCells)
-%     
-%     a_strctCells(ca).time = 'aft';
-%     
-% end
 
-%% computing
+%% computing - took ~500 seconds with 8 cores
 
 load([diskPath filesep 'ObjectSpace' filesep '500Stimuli' filesep 'params_Alexnet_fc6_500Stimuli.mat']); % will create dataParams = 500x50
 
 
 options.screenType = 'Object';
 options.ind_train = imageIDs; % use all objects to calculate STA
-        
+ tic       
 parfor cellIndex = l(strctCells)
-    tic
+    
     n_reps = 100;
     p_dist = nan(1, n_reps);
     for dist = 1:n_reps
@@ -79,9 +72,9 @@ parfor cellIndex = l(strctCells)
     % save the whole distribution
     strctCells(cellIndex).pvalRamp = p_dist;
     disp(['Finished for cell ' num2str(cellIndex)])
-    toc
+    
 end
-
+toc
 keyboard
 % save file
 save([diskPath filesep 'Object_Screening' filesep 'AllRespITCells_Morn&AftSessions_withPDist_Scrn_500Stim.mat'], 'strctCells', 'psths', 'responses', '-v7.3')
@@ -246,7 +239,7 @@ save([diskPath filesep 'Object_Screening' filesep 'AllMergedRespITCells_withPDis
 
 
 %% Finally - Saving merged sigramp cells
-
+setDiskPaths
 % load([diskPath filesep 'Object_Screening' filesep 'AllRespITCells_Morn&AftSessions_withPDist_Scrn_500Stim.mat'])
 load([diskPath filesep 'Object_Screening' filesep 'AllMergedRespITCells_withPDist_Scrn_500Stim.mat'])
 
@@ -262,73 +255,19 @@ for cellIndex = l(strctCells)
 end
 
 
-strctCells = strctCells(idx == length(p_info));
-responses = responses(idx == length(p_info), :);
-psths = psths(idx == length(p_info), :);
+
+% more strict
+% strctCells = strctCells(idx == length(p_info));
+% responses = responses(idx == length(p_info), :);
+% psths = psths(idx == length(p_info), :);
+
+% less strict
+strctCells = strctCells(idx > length(p_info)*0.98);
+responses = responses(idx > length(p_info)*0.98, :);
+psths = psths(idx > length(p_info)*0.98, :);
 
 keyboard
 save([diskPath filesep 'Object_Screening' filesep 'MergedITCells_500Stim_Scrn_SigRamp.mat'], 'strctCells', 'responses', 'psths', '-v7.3')
 
 
 
-%% for targetting - where did we get good yield
-
-setDiskPaths
-load([diskPath filesep 'Object_Screening' filesep 'AllRespITCells_Morn&AftSessions_withPDist_Scrn_500Stim.mat'])
-% load([diskPath filesep 'Object_Screening' filesep 'AllMergedRespITCells_withPDist_Scrn_500Stim.mat'])
-
-idx = zeros(length(strctCells), 1);
-
-
-for cellIndex = l(strctCells)
-    
-    p_info = strctCells(cellIndex).pvalRamp;
-    
-    idx(cellIndex) = sum(p_info < 0.01);
-end
-
-s_c = strctCells(idx == 500);
-
-% amke cell arrays 
-strctCELL = struct2cell(strctCells');
-strctCELL = strctCELL';
-
-s_C = struct2cell(s_c');
-s_C = s_C';
-
-PT = {};
-pt_ids = {'P71CS', 'P73CS', 'P75CS', 'P76CS', 'P77CS_L', 'P77CS_R', 'P78CS', 'P79CS_L', 'P79CS_R', 'P80CS_L', 'P80CS_R'};
-pt_ids = fliplr(pt_ids);
-
-for i = 1:length(pt_ids)
-    
-  PT{i, 1} = pt_ids{i};
-  
-  if strcmp(pt_ids{i}(end) , 'L')
-      
-      t1 = cellfun(@(x) strcmp(x, pt_ids{i}(1:end-2)), strctCELL(:, 7)); t2 = cellfun(@(x) strcmp(x, 'LFFA'), strctCELL(:, 4));
-      PT{i, 2} = sum(t1+t2 == 2);
-      
-      t1_sc = cellfun(@(x) strcmp(x, pt_ids{i}(1:end-2)), s_C(:, 7)); t2_sc = cellfun(@(x) strcmp(x, 'LFFA'), s_C(:, 4));
-      PT{i, 3} = sum(t1_sc+t2_sc == 2);
-      
-  elseif strcmp(pt_ids{i}(end) , 'R')
-      
-      t1 = cellfun(@(x) strcmp(x, pt_ids{i}(1:end-2)), strctCELL(:, 7)); t2 = cellfun(@(x) strcmp(x, 'RFFA'), strctCELL(:, 4));
-      PT{i, 2} = sum(t1+t2 == 2); 
-      
-      t1_sc = cellfun(@(x) strcmp(x, pt_ids{i}(1:end-2)), s_C(:, 7)); t2_sc = cellfun(@(x) strcmp(x, 'RFFA'), s_C(:, 4));
-      PT{i, 3} = sum(t1_sc+t2_sc == 2);
-      
-      
-  else
-      
-      PT{i, 2} = sum(cellfun(@(x) strcmp(x, pt_ids{i}), strctCELL(:, 7)));
-      PT{i, 3} = sum(cellfun(@(x) strcmp(x, pt_ids{i}), s_C(:, 7)));    
-      
-  end
-  
-  
-end  
-    
-    

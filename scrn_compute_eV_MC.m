@@ -18,7 +18,7 @@ setDiskPaths
 taskPath = 'Object_Screening';
 addpath(genpath('ObjectSpace'))
 
-%% For Objects
+% For Objects
 
 screenType = 'Object';
 
@@ -27,7 +27,7 @@ screenType = 'Object';
 
 % load in the neural data
 % Responsive cells
-% load([diskPath filesep 'Object_Screening' filesep 'AllMergedRespITCells_withPDist_Scrn_500Stim.mat']); RespCells = 1; layermat = 'fc7'; layerpy = 'IT_output'; stimDir = '500Stimuli'; imageIDs = [1:500]';
+% load([diskPath filesep 'Object_Screening' filesep 'AllMergedRespITCells_withPDist_Scrn_500Stim.mat']); RespCells = true; SigCells = false; layermat = 'fc7'; layerpy = 'IT_output'; stimDir = '500Stimuli'; imageIDs = [1:500]';
 
 
 % load([diskPath filesep 'ObjectSpace' filesep '500Stimuli' filesep 'params_Alexnet_fc6_500Stimuli.mat']); % will create dataParams = 500x50
@@ -47,8 +47,8 @@ screenType = 'Object';
 
 
 % sig ramp cells
-% load([diskPath filesep 'Object_Screening' filesep 'MergedITCells_500Stim_Scrn_SigRamp.mat']); SigCells = 1; layermat = 'fc7'; layerpy = 'IT_output'; stimDir = '500Stimuli'; imageIDs = [1:500]';
-load([diskPath filesep 'Object_Screening' filesep 'old_cellStructs' filesep 'MergedITCells_500Stim_Scrn_SigRamp.mat']); SigCells = 1; layermat = 'fc7'; layerpy = 'IT_output'; stimDir = '500Stimuli'; imageIDs = [1:500]';
+load([diskPath filesep 'Object_Screening' filesep 'MergedITCells_500Stim_Scrn_SigRamp.mat']); SigCells = true; RespCells = false; layermat = 'fc7'; layerpy = 'IT_output'; stimDir = '500Stimuli'; imageIDs = [1:500]';
+% load([diskPath filesep 'Object_Screening' filesep 'old_cellStructs' filesep 'MergedITCells_500Stim_Scrn_SigRamp.mat']); SigCells = 1; layermat = 'fc7'; layerpy = 'IT_output'; stimDir = '500Stimuli'; imageIDs = [1:500]';
 % layermat = 'comparison'; layerpy = 'comparison_output'; 
 
 % load([diskPath filesep taskPath filesep 'AllFaceCells_1593_Objects.mat']); FaceCells = 1; layermat = 'fc7'; layerpy = 'IT_output'; stimDir = '201Faces'; imageIDs = [1:201]';
@@ -74,6 +74,8 @@ end
 
 explainedVar = zeros(length(strctCells), numMdls); % neurons x models
 explainableVar = zeros(length(strctCells), 1);
+
+divideByNoiseCeiling = true;
 
 %%
 ndim = 50; % number of features to use
@@ -144,60 +146,10 @@ for modelNum = 1:numMdls
 end
 explainedVar_copy = explainedVar;
 
-%% explainable variance 
-% does it make sense for this to ever be negative? maybe if the responses
-% are just noise
-if strcmp(stimDir, '500Stimuli') && exist('SigCells')
-    load([diskPath filesep taskPath filesep 'ExV_500Stim_1000Reps_SigRampCells']);
-elseif strcmp(stimDir, '500Stimuli') && exist('RespCells')
-    load([diskPath filesep taskPath filesep 'ExV_500Stim_1000Reps_RespCells']);    
-else
-    % n_reps = 1000 takes 8hrs on laptop for 235 cells
-    tic
-    n_reps = 1000;
-    for rep = 1:n_reps
-        for cellIndex = 1:length(strctCells)
-            % calculate explainable variance
-            respLat = responses{cellIndex, 2};
-            if strcmp(strctCells(cellIndex).SessionID, 'P71CS_Fast')
-                sortedOrder = repelem(imageIDs, 6);
-                stimDur = 166.6250;
-                timelimits = [-0.17, 0.33];
-            elseif strcmp(strctCells(cellIndex).SessionID, 'P76CSRec_ReScreen')
-                order3 = load([diskPath filesep 'Recall_Task' filesep 'P76CS' filesep 'ReScreenRecall_Session_1_20210917' filesep 'PsthandResponses']); % had a few trials cut off
-                sortedOrder = order3.order;
-                stimDur = 266.6250;
-                timelimits = [-0.17, 0.53];
-            else
-                sortedOrder = repelem(imageIDs, 4);
-                %         sortedOrder = faceOrder-411;
-                stimDur = 266.6250;
-                timelimits = [-0.17, 0.53];
-            end
-            explainableVar(cellIndex, rep) = Utilities.computeExplainableVariance(psths(cellIndex, :),...
-                sortedOrder, respLat, stimDur, -timelimits(1)*1e3);
-        end
-    end
-    toc
-end
-expble_var = mean(explainableVar, 2);
-
-
-if exist('RespCells', 'var') && RespCells == 1
-%     save([diskPath filesep taskPath filesep 'ExV_500Stim_1000Reps_RespCells'], 'explainableVar', '-v7.3')
-
-elseif exist('SigCells', 'var') && SigCells == 1
-    save([diskPath filesep taskPath filesep 'ExV_500Stim_1000Reps_SigRampCells'], 'explainableVar', '-v7.3')
-
-end
-
-
-% save([diskPath filesep taskPath filesep 'ExV_500Stim_1000Reps_RespCells'], 'explainableVar', '-v7.3')
-% save([diskPath filesep taskPath filesep 'ExV_500Stim_1000Reps_SigRampCells'], 'explainableVar', '-v7.3')
-
 %% noise ceiling 
 
 A = cellfun(@(x) x', psths(:, 1), 'UniformOutput', false);
+
 
 for cellIndex = 1:length(strctCells)
     ras = A{cellIndex, 1};
@@ -228,7 +180,7 @@ for i=1:size(A,1)
 %           disp(i);
 %           ctr = ctr + 1;
       else
-          B{i,j}=mean(hist(responses{i, 2}:responses{i, 2}+stimDur,:),1);% Choose a time window you want to accumulate the spikes into a firing rate
+          B{i,j}=mean(hist(floor(responses{i, 2}):floor(responses{i, 2})+stimDur,:),1);% Choose a time window you want to accumulate the spikes into a firing rate
       end
       fir(i,j)=mean(B{i,j});  %mean firing rate
     end
@@ -246,18 +198,85 @@ for i=1:size(B,1)
 end
 evn=ev00;
 
-%% 
 
+
+%% explainable variance 
+% does it make sense for this to ever be negative? maybe if the responses
+% are just noise
+
+if ~divideByNoiseCeiling
+    if strcmp(stimDir, '500Stimuli') && SigCells
+        load([diskPath filesep taskPath filesep 'ExV_500Stim_1000Reps_SigRampCells']);
+    elseif strcmp(stimDir, '500Stimuli') && RespCells
+        load([diskPath filesep taskPath filesep 'ExV_500Stim_1000Reps_RespCells']);
+    else
+        % n_reps = 1000 takes 8hrs on laptop for 235 cells
+        tic
+        n_reps = 1000;
+        n_cells = length(strctCells);
+        parfor rep = 1:n_reps
+            for cellIndex = 1:n_cells%length(strctCells)
+                % calculate explainable variance
+                respLat = round(responses{cellIndex, 2});
+                if strcmp(strctCells(cellIndex).SessionID, 'P71CS_Fast')
+                    sortedOrder = repelem(imageIDs, 6);
+                    stimDur = 166.6250;
+                    timelimits = [-0.17, 0.33];
+                elseif strcmp(strctCells(cellIndex).SessionID, 'P76CSRec_ReScreen')
+                    order3 = load([diskPath filesep 'Recall_Task' filesep 'P76CS' filesep 'ReScreenRecall_Session_1_20210917' filesep 'PsthandResponses']); % had a few trials cut off
+                    sortedOrder = order3.order;
+                    stimDur = 266.6250;
+                    timelimits = [-0.17, 0.53];
+                else
+                    sortedOrder = repelem(imageIDs, 4);
+                    %         sortedOrder = faceOrder-411;
+                    stimDur = 266.6250;
+                    timelimits = [-0.17, 0.53];
+                end
+                explainableVar(cellIndex, rep) = Utilities.computeExplainableVariance(psths(cellIndex, :),...
+                    sortedOrder, respLat, stimDur, -timelimits(1)*1e3);
+            end
+        end
+        toc
+    end
+    expble_var = mean(explainableVar, 2);
+    
+    % if exist('RespCells', 'var') && RespCells == 1
+    %     save([diskPath filesep taskPath filesep 'ExV_500Stim_1000Reps_RespCells'], 'explainableVar', '-v7.3')
+    %
+    % elseif exist('SigCells', 'var') && SigCells == 1
+    %     save([diskPath filesep taskPath filesep 'ExV_500Stim_1000Reps_SigRampCells'], 'explainableVar', '-v7.3')
+    %
+    % end
+    
+    
+    % save([diskPath filesep taskPath filesep 'ExV_500Stim_1000Reps_RespCells'], 'explainableVar', '-v7.3')
+    % save([diskPath filesep taskPath filesep 'ExV_500Stim_1000Reps_SigRampCells'], 'explainableVar', '-v7.3') 
+else
+    
+    % make xpble_var the noise ceiling
+    % This is stevens way
+    expble_var = evn';
+    
+end
+
+
+%% 
 % highev = expble_var >= 0.1;
 highnc = (evn > 0.1)';
 
 % tokeep = (highnc + highev)  == 2;
 tokeep = highnc; 
-
 expble_var = expble_var(tokeep);
 explainedVar = explainedVar(tokeep, :, :);
 
 keptCells = strctCells(tokeep);
+
+% subsample - test
+% sub_sample = randi(sum(tokeep), [floor(sum(tokeep)/2) 1]);
+% explainedVar = explainedVar(sub_sample, :);
+% expble_var = expble_var(sub_sample, 1);
+
 
 %% 
 % ratio for ev/expv for cells with high noise ceiling
@@ -303,7 +322,15 @@ if strcmp(layermat, 'comparison') && strcmp(layerpy, 'comparison_output')
     set(gca, 'FontSize', 20, 'FontWeight', 'bold');
 
 %     sgtitle({['Ev/Expv across layers of models'], [num2str(ndim) ' features, obj responses - sigramp cells (sta)']});
+if divideByNoiseCeiling
+    sgtitle({['Ev/NC across layers of models'], [num2str(ndim) ' features']}, 'FontSize', 20, 'FontWeight', 'bold');
+    filename = [diskPath filesep taskPath filesep 'forPaper' filesep 'eV_divNC' num2str(ndim) 'featsLayerComparison_Objects_' method '_forPaper'];
+    
+else
     sgtitle({['Ev/Expv across layers of models'], [num2str(ndim) ' features']}, 'FontSize', 20, 'FontWeight', 'bold');
+    filename = [diskPath filesep taskPath filesep 'forPaper' filesep 'eV_' num2str(ndim) 'featsLayerComparison_Objects_' method '_forPaper'];
+    
+end
 %     sgtitle({['Explained variance across layers of models'], [num2str(ndim) ' features']}, 'FontSize', 20, 'FontWeight', 'bold');
     
     % putting error bars correctly
@@ -313,16 +340,22 @@ if strcmp(layermat, 'comparison') && strcmp(layerpy, 'comparison_output')
         endPts(j, :) = b(j).XEndPoints;
     end
     errorbar(endPts', adj_eV, err, 'k', 'linestyle', 'none')
-    filename = [diskPath filesep taskPath filesep 'eV_' num2str(ndim) 'featsLayerComparison_Objects_' method '_forPaper'];
 else
     b = bar(X, mean(adj_eV, 1));
 %     b.xticklabels = ''
     errorbar(X, mean(adj_eV, 1), err, 'k', 'LineStyle', 'none')
     
-    filename = [diskPath filesep taskPath filesep 'eV_' num2str(ndim) 'featsModelComparison_Objects_' method '_forPaper'];
     set(gca, 'FontSize', 14, 'FontWeight', 'bold');
 %     sgtitle({['Ratio of explained to explainable variance in neurons with high NC'], [num2str(ndim) ' features, obj responses - sigramp cells (sta)']}, 'FontWeight', 'bold');
+if divideByNoiseCeiling
+    filename = [diskPath filesep taskPath filesep 'forPaper' filesep 'eV_divNC_' num2str(ndim) 'featsModelComparison_Objects_' method '_forPaper'];
+    
+    sgtitle({['Ev/NC across models'], [num2str(ndim) ' features']}, 'FontWeight', 'bold');
+else
+    filename = [diskPath filesep taskPath filesep 'forPaper' filesep 'eV_' num2str(ndim) 'featsModelComparison_Objects_' method '_forPaper'];
+    
     sgtitle({['Ev/Expv across models'], [num2str(ndim) ' features']}, 'FontWeight', 'bold');
+end
 %     sgtitle({['Explained variance across models'], [num2str(ndim) ' features']}, 'FontWeight', 'bold');
     
 end
@@ -343,13 +376,13 @@ end
 % text(X(7), 0.36, 'V2', 'color', [0.8500 0.3250 0.0980], 'FontSize', 18, 'FontWeight', 'bold' )
 % text(X(7), 0.345, 'V4', 'color', [0.9290 0.6940 0.1250], 'FontSize', 18, 'FontWeight', 'bold' )
 % text(X(7), 0.33, 'IT', 'color', [0.4940 0.1840 0.5560], 'FontSize', 18, 'FontWeight', 'bold' )
-print(f, filename, '-dpng', '-r0')
+% print(f, filename, '-dpng', '-r0')
 
 %% Histogram
 %% Use the responsive cells - not the sig ramp cells
 
 idx = zeros(length(keptCells), 1);
-for cellIndex = l(keptCells)
+for cellIndex = 1:length(keptCells)
     
     p_info = keptCells(cellIndex).pvalRamp;
       

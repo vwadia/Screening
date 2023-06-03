@@ -12,6 +12,8 @@ options.screenType = 'Object';
 stimDir = '500Stimuli';
 layermat = 'fc6';
 
+% test = load([diskPath filesep 'ObjectSpace' filesep stimDir filesep ['params_Alexnet_' layermat '_' stimDir '.mat']]);
+
 load([diskPath filesep 'ObjectSpace' filesep stimDir filesep 'scores_alexnet_comparison.mat']); % will make cell array with fc6 fc6 after relu fc7 fc7 after relu
 params_full = scores{1};
 [coeff, score, ~, ~, explained, mu] = pca(params_full);
@@ -55,81 +57,103 @@ toc
 %% Does this make sense? Yes but have to remove my images - note that there are very close copies 
 
 %% Finding overlap between both stimulus sets (to remove the 500 images patients saw)
+
+% NOTE there are 2 sources of overlap
+% 1) Repeated images in the big set
+% 2) the 500 stim images being in the set
+
+% so to remove all images you need to find duplicates AND then check for
+% the stim ims
+% March2023 vwadia
+
+
 addpath('ObjectSpace');
 
 % load allimage_resp2.mat % loads im2all - 224x224x19606 image matrix
-load([diskPath filesep taskPath filesep 'LargeImageSet_NoRepeats'])
+% load([diskPath filesep taskPath filesep 'LargeImageSet_NoRepeats'])
+load([diskPath filesep taskPath filesep 'LargeImageSet_17856ims'])
 imageIDs = [1:500]';
 % ovrLap_imIDs = [];
 % im2all_woStim = im2all;
 % im2all_woStim(:, :, ovrLap_imIDs) = [];
-
+% save([diskPath filesep taskPath filesep 'LargeImageSet_NoRepeats'], 'im2all_woStim', '-v7.3')
 
 %% Removing overlap 
 % takes 242s for 18356 images
-
-tic
-ovrLap_imIDs = cell(length(imageIDs), 1);
-
-
-pathStim = [diskPath filesep taskPath filesep '500Stimuli'];
-im500 = Utilities.getImageDescriptions(pathStim, 224, imageIDs, 0);
-im500 = uint8(im500);
-
-for ctr = 1:length(imageIDs)
+% reduces set further to 17856 images (March 24th, 2023) 
+% im2all = im2all_woStim;
+if ~exist('im2all_woStim', 'var')
+    tic
+    ovrLap_imIDs = cell(length(imageIDs), 1);
     
-    targ = im500(:, :, ctr);
-    rp = 1;
     
-    for ctr2 = 1:size(im2all, 3)
+    pathStim = [diskPath filesep taskPath filesep '500Stimuli'];
+    im500 = Utilities.getImageDescriptions(pathStim, 224, 0, 0);
+    im500 = uint8(im500);
+    
+    
+    for ctr = 1:length(imageIDs)
         
-        comp = im2all(:, :, ctr2);
+        targ = im500(:, :, ctr);
+        rp = 1;
         
-        if isequal(targ, comp)
-
-            ovrLap_imIDs{ctr}(1, rp) = ctr2;
-            rp = rp+1;
+        for ctr2 = 1:size(im2all, 3)
+            
+            comp = im2all(:, :, ctr2);
+            
+            if isequal(targ, comp)
+                
+                ovrLap_imIDs{ctr}(1, rp) = ctr2;
+                rp = rp+1;
+                
+            end
             
         end
+    end
+    
+    
+    repVals = [];
+    for val = 1:length(ovrLap_imIDs)
+        
+        repVals = horzcat(repVals, ovrLap_imIDs{val});
         
     end
-end
-toc
-
-repVals = [];
-for val = 1:length(ovrLap_imIDs)
     
-    repVals = horzcat(repVals, ovrLap_imIDs{val});
-    
+    ovrLap_imIDs = repVals;
+    im2all_woStim = im2all;
+    im2all_woStim(:, :, ovrLap_imIDs) = [];
+    toc
 end
-
-ovrLap_imIDs = repVals;
-im2all_woStim = im2all;
-im2all_woStim(:, :, ovrLap_imIDs) = [];
-
-
-%% compute alexnet features manually
+%% compute alexnet features manually for large image set
+tic
 rem_overlap = 1;
+load([diskPath filesep taskPath filesep 'resp_AlexNet_fc6BeforeReLu_17856ims']) 
 
-grayImages = [];
-for i = 1:size(im2all_woStim, 3)
-    
-    grayImages(:, :, i) = single(imresize(im2all_woStim(:, :, i), [227 227]));
-    
-end
-grayImages = reshape(grayImages, [size(grayImages, 1) size(grayImages, 2) 1 size(grayImages, 3)]);
-grayImages = repmat(single(grayImages), [1 1 3 1]);
-
-
-lexnet = alexnet;
-layer = 'fc6';
-
-resp_wholeimage = activations(lexnet, grayImages, layer, 'OutputAs', 'rows'); 
+% if ~rem_overlap
+%     im2all_woStim = im2all;
+% end
+% 
+% grayImages = [];
+% for i = 1:size(im2all_woStim, 3)
+%     
+%     grayImages(:, :, i) = single(imresize(im2all_woStim(:, :, i), [227 227]));
+%     
+% end
+% grayImages = reshape(grayImages, [size(grayImages, 1) size(grayImages, 2) 1 size(grayImages, 3)]);
+% grayImages = repmat(single(grayImages), [1 1 3 1]);
+% 
+% 
+% lexnet = alexnet;
+% layer = 'fc6';
+% 
+% resp_wholeimage = activations(lexnet, grayImages, layer, 'OutputAs', 'rows'); 
 proj_into_500 = (resp_wholeimage - repmat(mu, [size(resp_wholeimage, 1) 1]))*coeff; % coeff = PCs of 500 object space
 proj = proj_into_500(:, 1:ndim); % now the images are projected into the space built by my 500 ims
 
 
+toc
 
+% save([diskPath filesep taskPath filesep 'resp_AlexNet_fc6BeforeReLu_largeSetNoRepeats'], 'resp_wholeimage', '-v7.3') 
 %% or load in precomputed features
 
 % rem_overlap = 1;
@@ -152,6 +176,9 @@ proj = proj_into_500(:, 1:ndim); % now the images are projected into the space b
 % % projection into space built by stim ims
 % proj_into_500 = (resp_wholeimage - repmat(mu, [size(resp_wholeimage, 1) 1]))*coeff; % coeff = PCs of 500 object space
 % proj = proj_into_500(:, 1:ndim); % now the images are projected into the space built by my 500 ims
+
+% save([diskPath filesep taskPath filesep 'resp_Alexnet_17856ims.mat'], 'resp', '-v7.3');
+
 
 %% Find best possible reconstruction - images in the lasrge set with min distance to stim
 imageIDs = [1:500];
@@ -297,7 +324,7 @@ ylabel('Number of Images')
 x_lim = xlim;
 xlim([1 x_lim(2)])
 
-print(f, [diskPath filesep taskPath filesep 'Hist_NormDist_LargeImageSet_SigRampcells_merged'], '-dpng', '-r0')
+% print(f, [diskPath filesep taskPath filesep 'Hist_NormDist_LargeImageSet_SigRampcells_merged'], '-dpng', '-r0')
 
 
 % %% patchShow with decoded images (make this better)
@@ -354,29 +381,30 @@ print(f, [diskPath filesep taskPath filesep 'Hist_NormDist_LargeImageSet_SigRamp
 
 
 %% remove duplicates 
+% im2all = im2all_woStim;
+tic
+dup_ids = zeros(size(im2all, 3), 1);
 
-% dup_ids = zeros(size(im2all, 3), 1);
-% 
-% for i = 1:size(im2all, 3)
-%     
-%     targ = im2all(:, :, i);
-%     for j = (i+1):length(dup_ids)
-%         
-%         if isequal(im2all(:, :, j), targ)
-%             dup_ids(j) = 1;
-%             disp([i, j])
-%         end
-%         
-%     end
-%     
-% end
-% 
-% % remove duplicate indices
-% im2all(:, :, find(dup_ids == 1)) = [];
+for i = 1:size(im2all, 3)
+    
+    targ = im2all(:, :, i);
+    for j = (i+1):length(dup_ids)
+        
+        if isequal(im2all(:, :, j), targ)
+            dup_ids(j) = 1;
+            disp([i, j])
+        end
+        
+    end
+    
+end
+
+% remove duplicate indices
+im2all(:, :, find(dup_ids == 1)) = [];
 % save([diskPath filesep taskPath filesep 'LargeImageSet_NoRepeats'], 'im2all', '-v7.3')
 % save([diskPath filesep taskPath filesep 'LargeImageSet_RepeatedIndices'], 'dup_ids');
 
-
+toc
 
 
 

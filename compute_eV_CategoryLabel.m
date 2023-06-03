@@ -93,26 +93,8 @@ elseif strcmp(stimDir, '500Stimuli') && exist('RespCells')
 end
 expble_var = mean(explainableVar, 2);
 
-%% compute ev using exemplar model - incomplete
 
-% exemplar model - defined as a 3rd degree polynomial of the euclidean distance between exemplar and other face
-% resp = c_0 + c_1*d + c_2*d^2 + c_3*d^3
-%      = c_0 + c_1*(SUM_1toN(e_i - x_i))^0.5 + c_2*(SUM_1toN(e_i - x_i)) + c_3*(SUM_1toN(e_i - x_i))^1.5
 
-load([diskPath filesep 'ObjectSpace' filesep stimDir filesep ['params_Alexnet_' layermat '_' stimDir '.mat']]);
-
-for cellIndex = 1:llength(strctCells)
-    
-     % collect responses
-    resp = responses{cellIndex, 1};
-    
-    fr = resp-mean(resp);
-    
-    % solve for the exemplar
-    
-    
-    
-end
 
 
 %% noise ceiling 
@@ -262,3 +244,12 @@ elseif exist('SigCells', 'var') && SigCells == 1
 end
 
 print(f, filename, '-dpng', '-r0')
+
+%% HELPER
+
+function param = param_normalize_per_dim(param, amp_dim, NIMAGE)
+%% normalize each dimension separately 
+%% Liang does this only - May2021
+param = param./repmat(amp_dim, [NIMAGE 1]);
+end
+

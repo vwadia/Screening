@@ -43,38 +43,50 @@ order = repelem([1:500]', 4);
 % m_basePath = [diskPath filesep 'Recall_Task' filesep 'P80CS' filesep 'RecallScreening_Session_2_20220730']; m_subID = 'P80CS_RecScreen_2';
 % a_basePath = [diskPath filesep 'Recall_Task' filesep 'P80CS' filesep 'ReScreenRecall_Session_2_20220731']; a_subID = 'P80CS_ReScreecRecall_2';
 
-m_basePath = [diskPath filesep 'Object_Screening' filesep 'P81CS' filesep 'ClosedLoopScreening_Session_1_20221030']; m_subID = 'P81CS_AM';
-a_basePath = [diskPath filesep 'Object_screening' filesep 'P81CS' filesep 'ClosedLoopReScreen_Session_1_20221030']; a_subID = 'P81_synth';
+% m_basePath = [diskPath filesep 'Object_Screening' filesep 'P81CS' filesep 'ClosedLoopScreening_Session_1_20221030']; m_subID = 'P81CS_AM';
+% a_basePath = [diskPath filesep 'Object_screening' filesep 'P81CS' filesep 'ClosedLoopReScreen_Session_1_20221030']; a_subID = 'P81_synth';
+
+% m_basePath = [diskPath filesep 'Object_Screening' filesep 'P82CS' filesep 'ClosedLoopScreening_Session_1_20230115']; m_subID = 'P82CS_CL_1';
+% a_basePath = [diskPath filesep 'Object_screening' filesep 'P82CS' filesep 'ClosedLoopReScreen_Session_1_20230115']; a_subID = 'P82CS_CLReScreen';
+
+% m_basePath = [diskPath filesep 'Recall_Task' filesep 'P84CS' filesep 'RecallScreening_Session_1_20230406']; m_subID = 'P84CS_RecScreen_1';
+% a_basePath = [diskPath filesep 'Recall_Task' filesep 'P84CS' filesep 'ReScreenRecall_Session_1_20230406']; a_subID = 'P84CS_ReScreenRecall_1';
+
+% m_basePath = [diskPath filesep 'Object_Screening' filesep 'P85CS' filesep 'ClosedLoopScreening_Session_1_20230419']; m_subID = 'P85CS_1';
+% a_basePath = [diskPath filesep 'Object_Screening' filesep 'P85CS' filesep 'ClosedLoopReScreen_Session_1_20230419']; a_subID = 'P85CS_CL_ReScreen';
+
+m_basePath = [diskPath filesep 'Recall_Task' filesep 'P85CS' filesep 'RecallScreening_Session_1_20230424']; m_subID = 'P85CS_RecScreen_1';
+a_basePath = [diskPath filesep 'Recall_Task' filesep 'P85CS' filesep 'ReScreenRecall_Session_1_20230424']; a_subID = 'P85CS_ReScreenRecall';
 
 
 
 %% load in data - all responsive cells from both sets of sessions. Will have to remake large struct for other sessions
 
-load([diskPath filesep 'Object_screening' filesep 'AllRespITCells_Morn&AftSessions_withPDist_Scrn_500Stim.mat'])
-withRampPValDist = 1;
-
-strctCELL = struct2cell(strctCells');
-strctCELL = strctCELL';
-
-% carve out morning session
-m_c = cellfun(@(x) strcmp(x, m_subID), strctCELL(:, 8));
-
-morn.psths = psths(m_c, :);
-morn.responses = responses(m_c, :);
-morn.strctCells = strctCells(m_c);
-morn.order = order;
-
-% carve out afternoon session
-a_c = cellfun(@(x) strcmp(x, a_subID), strctCELL(:, 8));
-
-aft.psths = psths(a_c, :);
-aft.responses = responses(a_c, :);
-aft.strctCells = strctCells(a_c);
-if ~isfield(aft, 'order')
-    aft.order = order;
-end
-
-SSIM = 0;
+% load([diskPath filesep 'Object_screening' filesep 'AllRespITCells_Morn&AftSessions_withPDist_Scrn_500Stim.mat'])
+% withRampPValDist = 1;
+% 
+% strctCELL = struct2cell(strctCells');
+% strctCELL = strctCELL';
+% 
+% % carve out morning session
+% m_c = cellfun(@(x) strcmp(x, m_subID), strctCELL(:, 8));
+% 
+% morn.psths = psths(m_c, :);
+% morn.responses = responses(m_c, :);
+% morn.strctCells = strctCells(m_c);
+% morn.order = order;
+% 
+% % carve out afternoon session
+% a_c = cellfun(@(x) strcmp(x, a_subID), strctCELL(:, 8));
+% 
+% aft.psths = psths(a_c, :);
+% aft.responses = responses(a_c, :);
+% aft.strctCells = strctCells(a_c);
+% if ~isfield(aft, 'order')
+%     aft.order = order;
+% end
+% 
+% SSIM = 0;
 
 %% load in data - with full cell structures. Not as flexible for other areas
 
@@ -123,52 +135,52 @@ SSIM = 0;
 % SSIM = 0;
 
 %% load in data - old way individual sessions 
-% withRampPValDist = 0;
-% 
-% % Morning -----------------------------------------------------------------
-% load([m_basePath filesep 'PsthandResponses']);
-% load([m_basePath filesep 'strctCells']);
-% 
-% strctCELL = struct2cell(strctCells');
-% strctCELL = strctCELL';
-% 
-% if ITCellsOnly
-%     IT_Cells = cellfun(@(x) strcmp(x, 'RFFA') || strcmp(x, 'LFFA'), strctCELL(:, 4));
-%     morn.strctCells = strctCells(IT_Cells);
-%     morn.psths = screeningPsth(IT_Cells, :);
-%     morn.responses = responses(IT_Cells, :);
-%     morn.order = order;
-% end
-% 
-% % get rid of non-responsive units for both sessions
-% index = cellfun(@isempty, morn.responses);
-% morn.responses(index(:, 1), :) = [];
-% morn.psths(index(:, 1), :) = [];
-% morn.strctCells(index(:, 1)) = [];
-% 
-% 
-% % Afternoon ---------------------------------------------------------------
-% load([a_basePath filesep 'PsthandResponses']);
-% load([a_basePath filesep 'strctCells']);
-% 
-% strctCELL = struct2cell(strctCells');
-% strctCELL = strctCELL';
-% 
-% if ITCellsOnly
-%     IT_Cells = cellfun(@(x) strcmp(x, 'RFFA') || strcmp(x, 'LFFA'), strctCELL(:, 4));
-%     aft.strctCells = strctCells(IT_Cells);
-%     aft.psths = screeningPsth(IT_Cells, :);
-%     aft.responses = responses(IT_Cells, :);
-%     aft.order = order;
-% end
-% 
-% % get rid of non-responsive units for both sessions
-% index = cellfun(@isempty, aft.responses);
-% aft.responses(index(:, 1), :) = [];
-% aft.psths(index(:, 1), :) = [];
-% aft.strctCells(index(:, 1)) = [];
-% 
-% SSIM = 0;
+withRampPValDist = 0;
+
+% Morning -----------------------------------------------------------------
+load([m_basePath filesep 'PsthandResponses']);
+load([m_basePath filesep 'strctCells']);
+
+strctCELL = struct2cell(strctCells');
+strctCELL = strctCELL';
+
+if ITCellsOnly
+    IT_Cells = cellfun(@(x) strcmp(x, 'RFFA') || strcmp(x, 'LFFA'), strctCELL(:, 4));
+    morn.strctCells = strctCells(IT_Cells);
+    morn.psths = psths(IT_Cells, :);
+    morn.responses = responses(IT_Cells, :);
+    morn.order = order;
+end
+
+% get rid of non-responsive units for both sessions
+index = cellfun(@isnan, morn.responses, 'UniformOutput', false);
+morn.responses(cell2mat(index(:, 2)), :) = [];
+morn.psths(cell2mat(index(:, 2)), :) = [];
+morn.strctCells(cell2mat(index(:, 2))) = [];
+
+
+% Afternoon ---------------------------------------------------------------
+load([a_basePath filesep 'PsthandResponses']);
+load([a_basePath filesep 'strctCells']);
+
+strctCELL = struct2cell(strctCells');
+strctCELL = strctCELL';
+
+if ITCellsOnly
+    IT_Cells = cellfun(@(x) strcmp(x, 'RFFA') || strcmp(x, 'LFFA'), strctCELL(:, 4));
+    aft.strctCells = strctCells(IT_Cells);
+    aft.psths = psths(IT_Cells, :);
+    aft.responses = responses(IT_Cells, :);
+    aft.order = order;
+end
+
+% get rid of non-responsive units for both sessions
+index = cellfun(@isnan, aft.responses,  'UniformOutput', false);
+aft.responses(cell2mat(index(:, 2)), :) = [];
+aft.psths(cell2mat(index(:, 2)), :) = [];
+aft.strctCells(cell2mat(index(:, 2))) = [];
+
+SSIM = 0;
 
 
 
@@ -194,8 +206,8 @@ if ~SSIM
     
     % using rank order of stim
     for m_row = 1:size(morn.strctCells, 2)
-        windowBegin = morn.responses{m_row, 2}-morn.timelimits(1)*1e3;
-        if ~isempty(windowBegin)
+        windowBegin = floor(morn.responses{m_row, 2}-morn.timelimits(1)*1e3);
+        if ~isnan(windowBegin)
             cellMat(m_row, :) = Utilities.sortByRespMagnitude(morn.order, imageIDs, morn.psths{m_row, 1}, windowBegin, stimDur)';
         else
             disp('hi')
@@ -204,8 +216,8 @@ if ~SSIM
     end
     
     for a_row = 1:size(aft.strctCells, 2)
-        windowBegin = aft.responses{a_row, 2}-aft.timelimits(1)*1e3;
-        if ~isempty(windowBegin)
+        windowBegin = floor(aft.responses{a_row, 2}-aft.timelimits(1)*1e3);
+        if ~isnan(windowBegin)
             cellMat(a_row+size(morn.strctCells, 2), :) = Utilities.sortByRespMagnitude(aft.order, imageIDs, aft.psths{a_row, 1}, windowBegin, stimDur)';
         else
             disp('hi')
@@ -256,14 +268,14 @@ FRs = [];
 for i = 1:size(morn.strctCells, 2)
     
 %     cellIDs(i, 3) = morn.strctCells(i).ChannelNumber;
-    FRs = [FRs; mean(mean(morn.psths{i, 1}(:, -morn.timelimits*1e3:-morn.timelimits*1e3+offset)))]; % the baseline is the first bit after stimON
+    FRs = [FRs; mean(mean(morn.psths{i, 1}(:, -morn.timelimits(1)*1e3:-morn.timelimits(1)*1e3+offset)))]; % the baseline is the first bit after stimON
     
 end
 
 for j = 1:size(aft.strctCells, 2)
     
 %     cellIDs(size(morn.strctCells, 2)+j, 3) = aft.strctCells(j).ChannelNumber;
-    FRs = [FRs; mean(mean(aft.psths{j, 1}(:, -aft.timelimits*1e3:-aft.timelimits*1e3+offset)))];
+    FRs = [FRs; mean(mean(aft.psths{j, 1}(:, -aft.timelimits(1)*1e3:-aft.timelimits(1)*1e3+offset)))];
     
 end
 
@@ -433,7 +445,7 @@ end
 
 % separate by channel 
 restrictToChannels = 1;
-no_repeats = 1;
+no_repeats = 0;
 
 % without waveform - worse performance after channel restriction
 % [cellPairs, compMat] = Utilities.compareCells(cellMat, cellIDs, restrictToChannels);
