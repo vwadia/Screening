@@ -233,7 +233,7 @@ new_resp = responses(~dupCells, :);
 strctCells = new_strctCells;
 responses = new_resp;
 psths = new_psths; 
-
+keyboard
 % now save
 save([diskPath filesep 'Object_Screening' filesep 'AllMergedRespITCells_withPDist_Scrn_500Stim.mat'], 'strctCells', 'psths', 'responses', '-v7.3')
 

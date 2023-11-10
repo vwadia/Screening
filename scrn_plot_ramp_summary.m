@@ -9,7 +9,7 @@ load([diskPath filesep 'ObjectSpace' filesep '500Stimuli' filesep 'params_Alexne
 task = 'Recall_Task';
 binnedAverage = 0;
 
-separateSides = 0;
+separateSides = false;
 
 %% choose task to analyze and load in data accordingly
 
@@ -41,7 +41,6 @@ end
 strctCELL = struct2cell(strctCells');
 strctCELL = strctCELL';
 
-ovrlap = ~ovrlap;
 if exist('ovrlap', 'var')
     strctCells = strctCells(ovrlap);
     responses = responses(ovrlap, :);
@@ -65,8 +64,8 @@ end
 
 %% separating hemispheres
 if separateSides
-    left = 0;
-    right = 1;
+    left = 1;
+    right = 0;
     strctCELL = struct2cell(strctCells');
     strctCELL = strctCELL';
     
@@ -252,8 +251,8 @@ meanfr = mean(f_r_s, 1);
 %% make heat plot - make this a function 
 useSmoothed = 1;
 avgCells = 0;
-ax2plot = 'sta';
-% ax2plot = 'ortho';
+% ax2plot = 'sta';
+ax2plot = 'ortho';
 
 
 f = figure; 
@@ -323,10 +322,13 @@ colormap(orangemap)
 
 % set up colorbar -------------------------------------------------
 cb = colorbar;
-cb.Ticks = ([-2 2]);
+% cb.Ticks = ([-2 2]); % removes ticks
+cb.Ticks = ([-1 1]);
 cb.FontWeight = 'bold';
 cb.Label.String = 'Norm Resp';
+cb.Label.Position = [1.468965517241376,0.046512581581292,0];
 cb.Position = [0.920833333333333,0.719047619047619,0.025595238095239,0.204761904761913];
+% cb.Label = 
 
 % set title and axis labels correctly -----------------------------------
 if strcmp(task, 'Recall_Task')
@@ -374,81 +376,126 @@ if exist('ovrlap', 'var')
     filename = [filename '_reactivatedCells'];
 
 end
-
+ 
+% ylim([0 44])
 % filename = [filename '_forPaper'];
 % filename = [filename '_P84CS'];
-% print(f, filename, '-dpng', '-r0');
-% close all
+print(f, filename, '-dpng', '-r300');
+close all
+
+%% VVIQ scores
+
+
+vviqScores = [0 48 72 48 52];
+f = figure; 
+hold on
+xlim([0.5 5.5])
+xl = xlim;
+
+
+yl(1, :) = [16 95]; % hyper
+yl(2, :) = [95 122]; % vivid 
+yl(3, :) = [122 143]; % hypo 
+yl(4, :)  = [143 160]; % aphantasic
+xl = xlim;
+
+cl(1, :) = [0.4 0.8 0]; 
+cl(2, :)= [0.8 0.8 0];
+cl(3, :) = [0.8 0.4 0];
+cl(4, :) = [0.8 0 0];
+
+xBox = [xl(1), xl(1), xl(2), xl(2), xl(1)];
+txt = [80 103 130 150];
+lab = {"Hyperphantasia", "Vivid Imagery", "Hypophantasia", "Aphantasia"};
+
+for i = 1:4
+
+    yBox = [yl(i, 1), yl(i, 2), yl(i, 2), yl(i, 1), yl(i, 1)];
+    patch(xBox, yBox, 'black', 'FaceColor', cl(i, :), 'FaceAlpha', 0.3);
+    text(4, txt(i), lab{i}, "FontSize", 16, "FontWeight", 'bold')
+
+end
+text(0.85, 10, 'N/A', "FontSize", 16, "FontWeight", 'bold')
+
+bar(vviqScores, 'FaceColor', [0 0.2 0]);
+% ylim([16 160])
+yticks([16 95 122 143 160])
+ylim([0 160])
+set(findobj(f,'type','axes'),'FontName','Arial','FontSize',16,'FontWeight','Bold', 'LineWidth', 1.2);
+xlabel('Patient #')
+filename = [diskPath filesep taskPath filesep 'VVIQScores_Thesis'];
+print(f, filename, '-dpng', '-r300')
+% hold off;
 
 
 %% histogram of slopes 
-
-% take responses to im stimuli sorted by pref and ortho ax distance computed above (f_r and f_r_o)
-% plot them as scatter per cell
-% fit a line through them and record slope
-% plot histogram
-
-cols = Utilities.distinguishable_colors(length(strctCells));
-dot_size = 20;
-slopes_pref = zeros(length(strctCells), 1);
-slopes_ortho = zeros(length(strctCells), 1);
-
-cc = zeros(length(strctCells), 2);
-
-R_Squared = zeros(length(strctCells), 2);
-for ax = 1:numOfAxes
-    
-    if ax == 1
-        matToUse = f_r_hist;
-        distMat = distMat_pref;
-%         matToUse = f_r;
-    elseif ax == 2
-        matToUse = f_r_o_hist; 
-        distMat = distMat_ortho;
-%         matToUse = f_r_o;       
-    end
-    
-%     f = figure;
-%     hold on
-    for cellIndex = 1:length(strctCells)
-        
-        c_x = distMat(cellIndex, end-(length(strctCells(cellIndex).recalledStim)-1):end);
-        x = 1:length(strctCells(cellIndex).recalledStim);
-        y = matToUse(cellIndex, end-(length(strctCells(cellIndex).recalledStim)-1):end);
-        % doing this strange end-n bullshit because not all rows are of the same length
-%         scatter(x, y, dot_size, cols(cellIndex,:), 'filled')
-        
-        % best fit line
-        % Get coefficients of a line fit through the data.
-        [coefficients, stats] = polyfit(c_x, y, 1);
-        
-        cc(cellIndex, ax) = corr(c_x', y');
-        
-        if ax == 1            
-            slopes_pref(cellIndex) = coefficients(1);
-        elseif ax == 2
-            slopes_ortho(cellIndex) = coefficients(1);
-
-        end
-        
-        % Create a new x axis with exactly 1000 points (or whatever you want).
-        xFit = linspace(0, 8, 1000);
-        % Get the estimated yFit value for each of those 1000 new x locations.
-        yFit = polyval(coefficients , xFit);
-        
-        R_Squared(cellIndex, ax) = 1 - (stats.normr/norm(y - mean(y)))^2;
-
-        %         plot(xFit, yFit, 'Color', cols(cellIndex, :), 'LineWidth', 1.5); % Plot fitted line.
-
-        
-        
-    end
-    
-end
-
-% if strcmp(task, 'Recall_Task')
-%     save([taskPath filesep 'AxisProj_ImResponse_corr_bothAxes'], 'cc');
+% 
+% % take responses to im stimuli sorted by pref and ortho ax distance computed above (f_r and f_r_o)
+% % plot them as scatter per cell
+% % fit a line through them and record slope
+% % plot histogram
+% 
+% cols = Utilities.distinguishable_colors(length(strctCells));
+% dot_size = 20;
+% slopes_pref = zeros(length(strctCells), 1);
+% slopes_ortho = zeros(length(strctCells), 1);
+% 
+% cc = zeros(length(strctCells), 2);
+% 
+% R_Squared = zeros(length(strctCells), 2);
+% for ax = 1:numOfAxes
+%     
+%     if ax == 1
+%         matToUse = f_r_hist;
+%         distMat = distMat_pref;
+% %         matToUse = f_r;
+%     elseif ax == 2
+%         matToUse = f_r_o_hist; 
+%         distMat = distMat_ortho;
+% %         matToUse = f_r_o;       
+%     end
+%     
+% %     f = figure;
+% %     hold on
+%     for cellIndex = 1:length(strctCells)
+%         
+%         c_x = distMat(cellIndex, end-(length(strctCells(cellIndex).recalledStim)-1):end);
+%         x = 1:length(strctCells(cellIndex).recalledStim);
+%         y = matToUse(cellIndex, end-(length(strctCells(cellIndex).recalledStim)-1):end);
+%         % doing this strange end-n bullshit because not all rows are of the same length
+% %         scatter(x, y, dot_size, cols(cellIndex,:), 'filled')
+%         
+%         % best fit line
+%         % Get coefficients of a line fit through the data.
+%         [coefficients, stats] = polyfit(c_x, y, 1);
+%         
+%         cc(cellIndex, ax) = corr(c_x', y');
+%         
+%         if ax == 1            
+%             slopes_pref(cellIndex) = coefficients(1);
+%         elseif ax == 2
+%             slopes_ortho(cellIndex) = coefficients(1);
+% 
+%         end
+%         
+%         % Create a new x axis with exactly 1000 points (or whatever you want).
+%         xFit = linspace(0, 8, 1000);
+%         % Get the estimated yFit value for each of those 1000 new x locations.
+%         yFit = polyval(coefficients , xFit);
+%         
+%         R_Squared(cellIndex, ax) = 1 - (stats.normr/norm(y - mean(y)))^2;
+% 
+%         %         plot(xFit, yFit, 'Color', cols(cellIndex, :), 'LineWidth', 1.5); % Plot fitted line.
+% 
+%         
+%         
+%     end
+%     
 % end
+% 
+% % if strcmp(task, 'Recall_Task')
+% %     save([taskPath filesep 'AxisProj_ImResponse_corr_bothAxes'], 'cc');
+% % end
 
 
 %% EVERYTHING BELOW HERE CAN BE PLOTTED BY RECALL.compute_corr_ProjvsFR
@@ -499,7 +546,7 @@ end
 % ylabel('No of neurons');
 % title({['Slopes of best fit lines - STA and Orthogonal axes'], 'Standardized FR'})
 % set(gca, 'FontSize', 14, 'FontWeight', 'bold');
-% % print(f, filename, '-dpng', '-r0')
+% % print(f, filename, '-dpng', '-r300')
 % % close all
 % 
 % 
@@ -525,7 +572,7 @@ end
 % title({'Correlation of projection value vs firing rate', 'STA and Orthogonal axes'})
 % set(gca, 'FontSize', 14, 'FontWeight', 'bold');
 % filename = [taskPath filesep 'CorrProjNormValvsFR_STAvsOrtho'];
-% % print(f, filename, '-dpng', '-r0')
+% % print(f, filename, '-dpng', '-r300')
 % % close all
 % 
 % 
@@ -579,7 +626,7 @@ end
 % set(gca, 'FontSize', 14, 'FontWeight', 'bold');
 % 
 % 
-% % print(f, filename, '-dpng', '-r0')
+% % print(f, filename, '-dpng', '-r300')
 % 
 % 
 % 
@@ -636,7 +683,7 @@ end
 % set(gca, 'FontSize', 14, 'FontWeight', 'bold');
 % 
 % 
-% % print(f, filename, '-dpng', '-r0')
+% % print(f, filename, '-dpng', '-r300')
 % 
 % 
 

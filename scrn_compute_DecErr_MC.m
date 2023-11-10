@@ -16,7 +16,7 @@ addpath(genpath('ObjectSpace'))
 screenType = 'Object';
 
 load([diskPath filesep taskPath filesep 'MergedITCells_500Stim_Scrn_SigRamp.mat']); layermat = 'fc7'; layerpy = 'IT_output'; stimDir = '500Stimuli'; imageIDs = [1:500]';
-% layermat = 'comparison'; layerpy = 'comparison_output';
+layermat = 'comparison'; layerpy = 'comparison_output';
 
 if strcmp(layermat, 'comparison') && strcmp(layerpy, 'comparison_output')
     numMdls = 8;
@@ -32,7 +32,7 @@ for cnt = 1:length(responses)
     fr_mat = [fr_mat responses{cnt, 1}];
 end
 
-
+divideByNoiseCeiling = false;
 
 %% noise ceiling
 
@@ -73,9 +73,21 @@ for i=1:size(B,1)
     ev00(i)=1-sum(meu(i,num(i,:)>1).^2)/sum((fir(i,num(i,:)>1)-mean(fir(i,num(i,:)>1))).^2);
 end
 evn=ev00;
-% responses = responses(evn > 0.1, :);
-% fr_mat = fr_mat(:, evn>0.1);
 
+if divideByNoiseCeiling
+    responses = responses(evn > 0.1, :);
+    fr_mat = fr_mat(:, evn>0.1);
+    all_strctCells = strctCells;
+    strctCells = strctCells(evn > 0.1);
+else
+    load([diskPath filesep taskPath filesep 'ExV_500Stim_1000Reps_SigRampCells']);
+    expble_var = mean(explainableVar, 2);
+    
+    responses = responses(expble_var > 0.1, :);
+    fr_mat = fr_mat(:, expble_var>0.1);
+    all_strctCells = strctCells;
+    strctCells = strctCells(expble_var > 0.1);
+end
 %%
 tic
 n_dist = 1; % 50 min for 10 dist and 50 dim
@@ -83,8 +95,7 @@ n_reps = 1000;
 ndim = 50; % number of features to use
 dec_acc_overall = zeros(numMdls, numLayers, n_dist);
 
-% ~5 mins across models
-% ~20 mins across models
+% ~9 mins across models for 128 high nc neurons
 for modelNum = 1:numMdls
     
     % load in model features

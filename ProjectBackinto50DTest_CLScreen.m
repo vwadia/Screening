@@ -10,14 +10,15 @@
 setDiskPaths
 
 
-% taskPath = 'Object_Screening';
-% m_sessPath = [diskPath filesep 'Object_Screening' filesep 'P81CS' filesep 'ClosedLoopScreening_Session_1_20221030'];patID = 'P81CS';
-% a_sessPath = [diskPath filesep 'Object_Screening' filesep 'P81CS' filesep 'ClosedLoopReScreen_Session_1_20221030'];
-
 taskPath = 'Object_Screening';
-m_sessPath = [diskPath filesep taskPath filesep 'P82CS' filesep 'ClosedLoopScreening_Session_1_20230115'];patID = 'P82CS';
-a_sessPath = [diskPath filesep taskPath filesep 'P82CS' filesep 'ClosedLoopReScreen_Session_1_20230115'];
+m_sessPath = [diskPath filesep 'Object_Screening' filesep 'P81CS' filesep 'ClosedLoopScreening_Session_1_20221030']; patID = 'P81CS';
+a_sessPath = [diskPath filesep 'Object_Screening' filesep 'P81CS' filesep 'ClosedLoopReScreen_Session_1_20221030'];
 
+% taskPath = 'Object_Screening';
+% m_sessPath = [diskPath filesep taskPath filesep 'P82CS' filesep 'ClosedLoopScreening_Session_1_20230115'];patID = 'P82CS';
+% a_sessPath = [diskPath filesep taskPath filesep 'P82CS' filesep 'ClosedLoopReScreen_Session_1_20230115'];
+
+% did not actually end up running this
 % taskPath = 'Recall_Task';
 % m_sessPath = [diskPath filesep 'Recall_Task' filesep 'P84CS' filesep 'RecallScreening_Session_2_20230408'];patID = 'P84CS';
 % a_sessPath = [diskPath filesep 'Recall_Task' filesep 'P84CS' filesep 'RecallScreening_Session_2_20230408'];
@@ -33,7 +34,7 @@ a_sessPath = [diskPath filesep taskPath filesep 'P82CS' filesep 'ClosedLoopReScr
 
 stimPath = [a_sessPath filesep 'genStimOnly'];
 
-if  ~strcmp(patID, 'P84CS')
+if ~strcmp(patID, 'P84CS')
     load([a_sessPath filesep 'SynthPsthandResponses'])
 end
 a_strctCells = load([a_sessPath filesep 'strctCells']);
@@ -62,8 +63,8 @@ if strcmp(patID, 'P81CS')
     legNames = {'1525', '1943', '1928', '2300', '1935'};
     
     GridOnly = 0; % by default
-    dimRed = 0; % if yes do dimensionality reduction and plot in 50D space otherwise do in 4096D space
-    useBigAxes = 1; % compute axes in 4096 space and convert them to 50D space (instead of recomputing in 50D)
+    dimRed = 1; % if yes do dimensionality reduction and plot in 50D space otherwise do in 4096D space
+    useBigAxes = 0; % compute axes in 4096 space and convert them to 50D space (instead of recomputing in 50D)
     
 elseif strcmp(patID, 'P82CS')
     
@@ -78,8 +79,9 @@ elseif strcmp(patID, 'P82CS')
     greyImsOnly = 0; % only black and white images
     GridOnly = 0;
     
+    % to recreate thesis figure = dimRed = 0 and useBigAxes = 1 w/ morning axis
     dimRed = 1; % if yes do dimensionality reduction and plot in 50D space otherwise do in 4096D space
-    useBigAxes = 1; % compute axes in 4096 space and convert them to 50D space (instead of recomputing in 50D)
+    useBigAxes = 0; % compute axes in 4096 space and convert them to 50D space (instead of recomputing in 50D)
     
     
 elseif strcmp(patID, 'P84CS')
@@ -107,8 +109,8 @@ elseif strcmp(patID, 'P85CS')
         morn_cells(7, 1) = 1355;
         morn_cells(11, 1) = 1419;
         aft_matches = morn_cells;
-        aft_matches(11, 1) = 1600;
-        aft_matches(7, 1) = 1539;
+        aft_matches(7, 1) = 1580;
+        aft_matches(11, 1) = 1539; % not actually a match
         aft_idx = 1;
         
         n_steps = 5;
@@ -124,7 +126,7 @@ elseif strcmp(patID, 'P85CS')
         corrThresh = 0.9;
         morn_cells = cat(1, m_strctCells.strctCells(:).Name);
         morn_cells(3, 1) = nan; morn_cells(4, 1) = nan;
-        aft_matches = [8320; 8302; nan; nan; 4305; 1189]; % try 4313 in pos 5
+        aft_matches = [8320; 8302; nan; nan; 4305; 1189]; % original
         
         aft_idx = 1;
         
@@ -141,7 +143,7 @@ elseif strcmp(patID, 'P85CS')
     
 end
 
-
+% xlim
 fullImDir = Utilities.readInFiles(stimPath);
 fullImDirCell = struct2cell(fullImDir)';
 if strcmp(patID, 'P85CS') && strcmp(taskPath, 'Recall_Task')
@@ -201,8 +203,7 @@ for cellIndex = startCell:endCell
                         resp = resp(1:20);
                     end
                 end
-            end
-            
+            end           
         end
         
         if strcmp(patID, 'P82CS')
@@ -252,7 +253,7 @@ for cellIndex = startCell:endCell
             
             currMat = featMat{c_idx};
             prefAxIms = currMat;
-            
+            options.famNorm = false;
             % -----------------------------------------------------------------
             
             % proper way - re-save features so it works like this March2023
@@ -397,6 +398,7 @@ for cellIndex = startCell:endCell
             rr_ortho = resp(find(x == 0));
             rr_pref = resp(find(y == 0));
         end
+        %
         % compute axis
         load([m_sessPath filesep 'PsthandResponses']); mornAxis = true;
 %         load([a_sessPath filesep 'PsthandResponses']); oldcellIndex = cellIndex; cellIndex = idx;  mornAxis = false;
@@ -409,8 +411,7 @@ for cellIndex = startCell:endCell
             %         staProj500 = (sta - mean(sta))*coeff;
             %         staProj500 = (sta - mean(axIms, 1))*coeff;
             
-%             options.sta = staProj500(1, 1:size(params, 2));
-            options.sta = test(1, 1:50);
+            options.sta = staProj500(1, 1:size(params, 2));
             sta = options.sta;
             % compute orthax in 4096D
 %             para = feat(options.ind_train,:);
@@ -438,7 +439,7 @@ for cellIndex = startCell:endCell
             %         orthAxProj500 = (orthAx - mean(axIms, 1))*coeff;
             
 %             options.orthAx = orthAxProj500(1, 1:size(params, 2))';
-            options.orthAx = orthAx; 
+            options.orthAx = orthAx; % uncomment this vwadia 9/14
             
             
         else
@@ -466,6 +467,9 @@ for cellIndex = startCell:endCell
         
         hfig = Utilities.ObjectSpace.STA_figure_original(allResp, params, options);
         
+        set(findobj(gcf,'type','axes'),'FontName','Arial','FontWeight','Bold', 'LineWidth', 1.2);
+
+        
         ndim = size(params, 2);
         
         if greyImsOnly
@@ -478,7 +482,7 @@ for cellIndex = startCell:endCell
         else
             filename = [filename '_aftAxis_' num2str(morn_cells(oldcellIndex)) '_' num2str(aft_matches(oldcellIndex))];            
         end
-        %     keyboard
+%             keyboard
 %         print(hfig, filename, '-dpng', '-r0');
 %         close all
     end

@@ -1,8 +1,8 @@
 
-setDiskPaths
+
 
 %% load in all IT cells and sent paths
-
+setDiskPaths
 filePath = 'predictedFeatures';
 
 taskPath = 'Object_Screening';
@@ -26,27 +26,31 @@ load([diskPath filesep 'Object_Screening' filesep 'MergedITCells_500stim_Scrn_Si
 % responses = responses(idx == length(p_info), :);
 % psths = psths(idx == length(p_info), :);
 
+
+python = false;
 %% load in image params
 
 options.screenType = 'Object';
 stimDir = '500Stimuli';
 layermat = 'fc6';
-% load([diskPath filesep 'ObjectSpace' filesep stimDir filesep ['params_Alexnet_' layermat '_' stimDir '.mat']]);
-load([diskPath filesep 'ObjectSpace' filesep stimDir filesep 'scores_alexnet_comparison.mat']); % will make cell array with fc6 fc6 after relu fc7 fc7 after relu
-params_full = scores{1};
-% [coeff, score, ~, ~, ~, mu] = pca(params_full, 'Centered', false);
-[coeff, score, ~, ~, ~, mu] = pca(params_full);
-params = score(:, 1:50);
-python = 0;
 
+if ~python
+    % load([diskPath filesep 'ObjectSpace' filesep stimDir filesep ['params_Alexnet_' layermat '_' stimDir '.mat']]);
+    load([diskPath filesep 'ObjectSpace' filesep stimDir filesep 'scores_alexnet_comparison.mat']); % will make cell array with fc6 fc6 after relu fc7 fc7 after relu
+    params_full = scores{1};
+%     params_full = scores{2};
+    % [coeff, score, ~, ~, ~, mu] = pca(params_full, 'Centered', false);
+    [coeff, score, ~, ~, ~, mu] = pca(params_full);
+    params = score(:, 1:50);
+else
+    
+    load([diskPath filesep 'ObjectSpace' filesep stimDir filesep ['params_AlexnetPYTHON_' layermat '_' stimDir '.mat']]); matmean = 0;
+%     load([diskPath filesep 'ObjectSpace' filesep stimDir filesep ['params_AlexnetPYTHON_MatlabMean_' layermat '_' stimDir '.mat']]); matmean = 1;
+    [coeff, score, ~, ~, ~, mu] = pca(feat);
+    params = score(:, 1:50);
+end
 
-% load([diskPath filesep 'ObjectSpace' filesep stimDir filesep ['params_AlexnetPYTHON_' layermat '_' stimDir '.mat']]); matmean = 0;
-% load([diskPath filesep 'ObjectSpace' filesep stimDir filesep ['params_AlexnetPYTHON_MatlabMean_' layermat '_' stimDir '.mat']]); matmean = 1;
-% [coeff, score, ~, ~, ~, mu] = pca(feat);
-% params = score(:, 1:50);
-% python = 1;
-
-%% predict features - takes ~70 seconds
+%% predict features - takes ~227 seconds for 260 neurons
 tic
 % create resp_mat
 resp_mat = [];
@@ -59,6 +63,7 @@ all_inds = [1:500]';
 % adding column of ones
 resp_mat = [resp_mat ones(size(resp_mat, 1), 1)];
 
+% parfor dim = 1:ndim % per dimension
 for dim = 1:ndim % per dimension
     for idx = 1:length(all_inds) % per image
         
@@ -120,32 +125,32 @@ save(fname, 'pred_feat_full');
 % fc6_recon = decoded 50D features (pred_feat)
 % fc6_original = original features from python (params)
 % fc6_bpr = original 4096 features projected into 50D space (have to compute)
-
-load(fname)
-% compute fc6_bpr 
-proj = params*coeff(:, 1:ndim)' + repmat(mu, [length(all_inds) 1]);
-
-
-norm_dist = [];
-for im = all_inds'
+if python
+    load(fname)
+    % compute fc6_bpr
+    proj = params*coeff(:, 1:ndim)' + repmat(mu, [length(all_inds) 1]);
     
-    fc6_orig = feat(im, :);
     
-    fc6_recon = pred_feat_full(im, :);
-    
-    fc6_bpr = proj(im, :);
-    
-    norm_dist(im) = abs(fc6_recon - fc6_orig)/abs(fc6_bpr - fc6_orig);
-    
+    norm_dist = [];
+    for im = all_inds'
+        
+        fc6_orig = feat(im, :);
+        
+        fc6_recon = pred_feat_full(im, :);
+        
+        fc6_bpr = proj(im, :);
+        
+        norm_dist(im) = abs(fc6_recon - fc6_orig)/abs(fc6_bpr - fc6_orig);
+        
+    end
 end
-
 %% histogram - see decode_images_largedatabase for a clean way to do this with colors
 
 
 %% Test decoding accuracy - NN and cosine similarity
 
-metric = 'nn';
-% metric = 'cosine_dist';
+% metric = 'nn';
+metric = 'cosine_dist';
 
 n_repeats = 1000;
 n_comp = 50; 
@@ -158,7 +163,7 @@ for n_distr = 1:n_comp % takes ~35 min to run when n_comp = 50
 
     for im = 1:size(pred_feat, 1) % for each reconstructed image'
         dist = zeros(1, n_distr+1); 
-        for rep = 1:n_repeats
+        parfor rep = 1:n_repeats
             
             % sample images
             % ensure all images including the target are in sample_ids
@@ -203,11 +208,11 @@ for n_distr = 1:n_comp % takes ~35 min to run when n_comp = 50
     toc
 end
 
-
+save([diskPath filesep taskPath filesep 'DecAccuracies50Dist_NN_Cos'], 'dec_acc_cos', 'dec_acc_nn');
 
 %% figure - dec acc as a function of distractors
 
-dec_acc_nn = dec_acc;
+% dec_acc_nn = dec_acc;
 % dec_acc_cos = dec_acc;
 % if ~exist('dec_acc_nn', 'var') || ~exist('dec_acc_cos', 'var')
 %     load([diskPath filesep taskPath filesep 'DecAccuracies50Dist_NN_Cos'])
@@ -218,14 +223,14 @@ f = figure;
 hold on
 plot(mean(dec_acc_nn, 1)', 'LineWidth', 2);
 % plot(mean(dec_acc_cos, 1)', 'LineWidth', 2);
-plot(chance, '--k', 'LineWidth', 2);
+plot(chance, '--k', 'LineWidth', 2, 'HandleVisibility', 'off');
 set(gca, 'FontSize', 14, 'FontWeight', 'bold');
 legend({'Nearest Neighbour', 'Cosine Similarity'})
 title({'Decoding accuracy all IT cells'});
 xlabel('Number of distractors')
 ylabel('Decoding accuracy')
 
-% print(f, [diskPath filesep taskPath filesep 'ObjectFeature_Dec_acc_wdistractors_ITCells'], '-dpng', '-r0')
+print(f, [diskPath filesep taskPath filesep 'ObjectFeature_DecAcc_nn_wdistractors_ITCells'], '-dsvg', '-r300')
 
 
 %% figure scatter plot of predicted and actual features (PCs)
@@ -236,16 +241,20 @@ ylabel('Decoding accuracy')
 % latency computation method? --> this doens't make a difference
 % EDIT: using the python parameters does though
 
-for pc_num = 1:5
+for pc_num = 1:2
 
 f2 = figure; 
 hold on
 x = params(:, pc_num);
 y = pred_feat(:, pc_num);
 if pc_num == 1
-    scatter(x, y, 'r', 'filled')
+%     scatter(x, y, [], [0 0.25 0], 'filled')
+    scatter(x, y, [], 'k', 'filled')
 elseif pc_num == 2
-    scatter(x, y, 'b', 'filled')
+%     scatter(x, y, [], [0.5 0.2 0.55], 'filled')
+    scatter(x, y, [], 'k', 'filled')
+else
+    scatter(x, y, 'k', 'filled');
 end
 set(gca, 'FontSize', 14, 'FontWeight', 'bold');
 xlim([min(x) max(x)])
@@ -271,7 +280,7 @@ yFit = polyval(coefficients , xFit);
 plot(xFit, yFit, 'k-', 'LineWidth', 2); % Plot fitted line.
 
 % filename = [diskPath filesep taskPath filesep 'ModlFeat_ActualFeat_comparison_PC' num2str(pc_num)];
-% print(f2, filename, '-dpng', '-r0')
+% print(f2, filename, '-dsvg', '-r300')
 % close all
 end
 
@@ -283,16 +292,17 @@ c = corr(params, pred_feat); % use this
 % c = corr(feat, pred_feat_full);
 
 cmap = zeros(size(c, 1), 3);
-% cmap(1, :) = [1 0 0]; 
-% cmap(2, :) = [0 0 1]; 
+cmap(1, :) = [0 0.25 0]; 
+cmap(2, :) = [0.5 0.2 0.55]; 
 
 scatter(1:size(c, 1), diag(c),'filled', 'CData', cmap); 
+% scatter(1:size(c, 1), diag(c), 'CData', cmap); 
 set(gca, 'FontSize', 14, 'FontWeight', 'bold');
 xlabel('PC dimension')
 ylabel('Correlation value')
 
 % filename = [diskPath filesep taskPath filesep 'Corr_ModelDims_ActualDims'];
-% print(f3, filename, '-dpng', '-r0')
+% print(f3, filename, '-dsvg', '-r300')
 % close all
 
 % xl = [-800:450];
@@ -348,7 +358,7 @@ ylabel('Correlation value')
 %     title('Normalized distance of decoded images')
 %     
 %     
-%     print(f, filename, '-dpng', '-r0')
+%     print(f, filename, '-dsvg', '-r300')
 % % end
 %% going from 50D --> 4096D (my bootleg method)
 

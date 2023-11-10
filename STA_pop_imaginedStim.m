@@ -2,8 +2,10 @@
 %% load in data
 
 setDiskPaths
-task = 'Object_Screening';
-% task = 'Recall_Task';
+% task = 'Object_Screening';
+task = 'Recall_Task';
+
+loadedCorr = false;
 taskPath = [diskPath filesep task filesep 'forPaper'];
 if ~exist(taskPath)
     mkdir([taskPath]);
@@ -33,7 +35,7 @@ elseif strcmp(task, 'Object_Screening')
 end
 load([diskPath filesep 'ObjectSpace' filesep '500Stimuli' filesep 'params_Alexnet_fc6_500Stimuli.mat']); % will create params = 500x50
 
-separateSides = 0;
+separateSides = true;
 % % per patientc
 % pt_ID = 'P79CS';
 % % pt_ID = 'P76CS';
@@ -117,21 +119,35 @@ for i = 1:n_reps
     cc_rand(i) = corr(Utilities.Shuffle(xvals), touse_resp);
     cc_ortho_rand(i) = corr(Utilities.Shuffle(yvals), touse_resp);
 end
-cc = corr(xvals,touse_resp); % 
-p = sum(cc_rand > cc)/length(cc_rand);
-cc_ortho = corr(yvals, touse_resp);
-p_ortho = sum(cc_ortho_rand > cc_ortho)/length(cc_ortho_rand);
 
+if loadedCorr
+    cc_dist = cc;
+    cc = mean(cc_dist(:, 1));
+    cc_ortho = mean(cc_dist(:, 2));
+    p = sum(cc_rand > cc)/length(cc_rand);
+    p_ortho = sum(cc_ortho_rand > cc_ortho)/length(cc_ortho_rand);
+else
+    cc = corr(xvals,touse_resp); %
+    p = sum(cc_rand > cc)/length(cc_rand);
+    cc_ortho = corr(yvals, touse_resp);
+    p_ortho = sum(cc_ortho_rand > cc_ortho)/length(cc_ortho_rand);
+end
 
 %% make figure
 f = figure;
 sgtitle({'Average projections onto individual axes', 'Imagination - all cells'})
+
+xtiks = [-0.2 0 0.2];
+ytiks = [-0.1 0 0.1];
+
 % FR along "STA"
 h1 = subplot(3, 3, [2 3])
 nonlin = Utilities.ObjectSpace.compute_binned_average(xvals, Im_resp, options.nbins, 10);
 errorbar(nonlin.x, nonlin.y, nonlin.e, 'k');
 yl_sta = ylim;
 xl_sta = xlim;
+xticks(xtiks)
+yticks(ytiks)
 % ylim([-yl_sta(2) yl_sta(2)])
 
 % scatter
@@ -145,6 +161,8 @@ yvals_s = yvals(reord);
 c = dot_color(reord, :);
 h2 = subplot(3, 3, [5 6 8 9])
 scatter(xvals_s, yvals_s, 30, c, 'filled');
+xticks(xtiks)
+yticks(ytiks)
 box on
 
 % FR along ortho
@@ -153,6 +171,9 @@ nonlin = Utilities.ObjectSpace.compute_binned_average(yvals, Im_resp, options.nb
 herrorbar(nonlin.y, nonlin.x, nonlin.e, 'k');
 xlim([-yl_sta(2) yl_sta(2)]);
 ylim([xl_sta(1) xl_sta(2)]);
+xticks(xtiks)
+yticks(ytiks)
+
 % shuffle dist
 h4 = subplot(3, 3, 1)
 h = histogram(cc_rand,-0.5:0.01:1);
@@ -163,15 +184,25 @@ text(.2, 200, num2str(p,'p = %.3f'))
 
 linkaxes([h1, h2], 'x');
 linkaxes([h2, h3], 'y');
+set(findobj(gcf,'type','axes'),'FontName','Arial','FontWeight','Bold', 'LineWidth', 1.2);
+% set(gca
 
 filename = [taskPath filesep 'RampSummaryAxisProj_AllCells_Im'];
+if separateSides
+    if left && ~right
+        filename = [filename '_left'];
+    elseif right && ~left
+        filename = [filename '_right'];
+    else
+        keyboard
+    end
+end
 % print(f, filename, '-dpng', '-r0');
 
 %% Shuffle distribution along each axis - imagination
-loadedCorr = false;
-if strcmp(task, 'Recall_Task')
-    cellCorr = load([diskPath filesep task filesep 'AxisProj_ImResponse_corr_bothAxes']);
-    loadedCorr = true;
+if loadedCorr 
+%     cellCorr = load([diskPath filesep task filesep 'AxisProj_ImResponse_corr_bothAxes']);
+    cellCorr.cc = cc_dist;
 end
 % ortho
 f = figure; hold on; 
@@ -179,6 +210,7 @@ h = histogram(cc_ortho_rand, -1:0.1:1);
 h.FaceColor = [1 1 1]; 
 if ~loadedCorr
     plot([cc_ortho cc_ortho], [0 length(cc_ortho_rand)*0.2], 'LineWidth', 2, 'Color', 'r');
+    plot([cc_b_o cc_b_o], [0 length(cc_ortho_rand)*0.2], 'LineWidth', 2, 'Color', [0.4940 0.1840 0.5560]);
 else
     plot([mean(cellCorr.cc(:, 2)) mean(cellCorr.cc(:, 2))], [0 length(cc_ortho_rand)*0.2], 'LineWidth', 2, 'Color', 'r');
 end
@@ -194,6 +226,19 @@ xlabel('Correlation value');
 set(gca, 'FontSize', 14, 'FontWeight', 'bold')
 filename = [taskPath filesep 'RampSummaryAxisProj_AllCells_OrthoAxCorr']
 filename = [filename '_' lbl];
+
+if loadedCorr
+    filename = [filename '_reacCells'];
+end
+if separateSides
+    if left && ~right
+        filename = [filename '_left'];
+    elseif right && ~left
+        filename = [filename '_right'];
+    else
+        keyboard
+    end
+end
 % print(f, filename, '-dpng', '-r0');
 
 %%
@@ -204,9 +249,11 @@ h = histogram(cc_rand,-1:0.01:1);
 h.FaceColor = [1 1 1];
 hold on;
 if strcmp(task, 'Recall_Task')
-%     plot([cc cc],[0 50], 'LineWidth', 2, 'Color', 'r');
-    plot([mean(cellCorr.cc(:, 1)) mean(cellCorr.cc(:, 1))],[0 50], 'LineWidth', 2, 'Color', 'r');
-    text(.2, 100, num2str(p,'p = %.3f'), 'FontSize', 14, 'FontWeight', 'bold')
+    plot([cc cc],[0 50], 'LineWidth', 2, 'Color', 'r');
+%     plot([cc_b cc_b], [0 length(cc_ortho_rand)*0.2], 'LineWidth', 2, 'Color', [0.4940 0.1840 0.5560]);
+
+%     plot([mean(cellCorr.cc(:, 1)) mean(cellCorr.cc(:, 1))],[0 50], 'LineWidth', 2, 'Color', 'r');
+    text(.2, 60, num2str(p,'p = %.3f'), 'FontSize', 14, 'FontWeight', 'bold')
     title({'Correlation of imagined responses and projection value', 'Preferred axis'})
     
 elseif strcmp(task, 'Object_Screening')
@@ -221,7 +268,18 @@ set(gca, 'FontSize', 14, 'FontWeight', 'bold')
 
 filename = [taskPath filesep 'RampSummaryAxisProj_AllCells_STAAxCorr'];
 filename = [filename '_' lbl];
-
+if loadedCorr
+    filename = [filename '_reacCells'];
+end
+if separateSides
+    if left && ~right
+        filename = [filename '_left'];
+    elseif right && ~left
+        filename = [filename '_right'];
+    else
+        keyboard
+    end
+end
 % print(f, filename, '-dpng', '-r0');
 %% comparing real and imagined scresponses along the ramp and ortho axes per cell
 

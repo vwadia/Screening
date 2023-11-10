@@ -14,11 +14,11 @@
 
 setDiskPaths
 
-% taskPath = 'Object_Screening';
-% patID = 'P82CS';
-% m_sessPath = [diskPath filesep taskPath filesep 'P82CS' filesep 'ClosedLoopScreening_Session_1_20230115'];
-% a_sessPath = [diskPath filesep taskPath filesep 'P82CS' filesep 'ClosedLoopReScreen_Session_1_20230115'];
-% stimPath = [a_sessPath filesep 'genStimOnly'];
+taskPath = 'Object_Screening';
+patID = 'P82CS';
+m_sessPath = [diskPath filesep taskPath filesep 'P82CS' filesep 'ClosedLoopScreening_Session_1_20230115'];
+a_sessPath = [diskPath filesep taskPath filesep 'P82CS' filesep 'ClosedLoopReScreen_Session_1_20230115'];
+stimPath = [a_sessPath filesep 'genStimOnly'];
 
 % taskPath = 'Object_Screening';
 % patID = 'P85CS';
@@ -26,11 +26,11 @@ setDiskPaths
 % a_sessPath = [diskPath filesep taskPath filesep 'P85CS' filesep 'ClosedLoopReScreen_Session_1_20230419'];
 % stimPath = [a_sessPath filesep 'GridTif'];
 
-taskPath = 'Recall_Task';
-patID = 'P85CS';
-m_sessPath = [diskPath filesep taskPath filesep 'P85CS' filesep 'RecallScreening_Session_1_20230424'];
-a_sessPath = [diskPath filesep taskPath filesep 'P85CS' filesep 'ReScreenRecall_Session_1_20230424'];
-stimPath = [a_sessPath filesep 'GridTif'];
+% taskPath = 'Recall_Task';
+% patID = 'P85CS';
+% m_sessPath = [diskPath filesep taskPath filesep 'P85CS' filesep 'RecallScreening_Session_1_20230424'];
+% a_sessPath = [diskPath filesep taskPath filesep 'P85CS' filesep 'ReScreenRecall_Session_1_20230424'];
+% stimPath = [a_sessPath filesep 'GridTif'];
 
     
 load([a_sessPath filesep 'SynthPsthandResponses'])
@@ -57,10 +57,23 @@ if strcmp(patID, 'P82CS')
     nbin = 10;
     
     greyImsOnly = 0; % only black and white images
-elseif strcmp(patID, 'P85CS')
+elseif strcmp(patID, 'P85CS') && strcmpi(taskPath, 'Object_Screening')
     
     morn_cells = [1419];
     aft_matches = [1539];
+    aft_idx = [1];
+    n_steps = 5;
+    n_steps_ortho = 5; % set per session
+    nbin = 10;
+    scale = 1.2;
+    stepRangeOrtho = round([-n_steps_ortho:1:n_steps_ortho]*scale, 2);
+    stepRange = round([-n_steps:1:n_steps]*scale, 2);
+    greyImsOnly = 0; % only black and white images
+    
+elseif strcmp(patID, 'P85CS') && strcmpi(taskPath, 'Recall_Task')
+    
+    morn_cells = [2700];
+    aft_matches = [8320];
     aft_idx = [1];
     n_steps = 5;
     n_steps_ortho = 5; % set per session
@@ -160,7 +173,11 @@ for cellIndex = 1:length(aft_matches)
         dot_color = dot_color(reorder_ind, :);
         
         scatter(x, y, dot_size, dot_color, 'filled')
-        
+%         xt = xticks;
+        if strcmp(patID, 'P82CS')
+            xticklabels({'-0.4', '', '0', '', '0.4'})
+            yticklabels({'-0.4', '', '0', '', '0.4'})
+        end
         % binned FR along pref ax for all ortho values
         h1 = subplot(3, 3, [2 3]);
         hold on
@@ -172,7 +189,9 @@ for cellIndex = 1:length(aft_matches)
             hline = plot(nonlin.x, nonlin.y);
             hline.Color = [0.5 0.5 0.5 0.5];  % alpha=0.5
         end
-        
+        if strcmp(patID, 'P82CS')
+            xticklabels({'-0.4', '', '0', '', '0.4'})
+        end
         % summary in black
         nonlin = compute_binned_average(x, sorted_resp, nbin, 1); 
         errorbar(nonlin.x, nonlin.y, nonlin.e, 'k');
@@ -189,7 +208,9 @@ for cellIndex = 1:length(aft_matches)
             hline = plot(nonlin.y - mean(nonlin.y), nonlin.x);
             hline.Color = [0.5 0.5 0.5 0.5];  % alpha=0.5
         end
-        
+        if strcmp(patID, 'P82CS')
+            yticklabels({'-0.4', '', '0', '', '0.4'})
+        end
         % summary in black
         nonlin = compute_binned_average(y, sorted_resp, nbin, 1); 
         herrorbar(nonlin.y - mean(nonlin.y), nonlin.x, nonlin.e, 'k');
@@ -221,13 +242,14 @@ for cellIndex = 1:length(aft_matches)
         hold on;
         plot([cc cc],[0 50], 'LineWidth', 2, 'Color', 'r');
         text(.2, 40, num2str(p,'p = %.3f'))
-        
+        set(findobj(gcf,'type','axes'),'FontName','Arial','FontWeight','Bold', 'LineWidth', 1.2);
+
         if greyImsOnly
             filename = [a_sessPath filesep  '2DGrid_' patID '_Cell_' num2str(aft_matches(cellIndex)) '_B&WIms'];  
         else
             filename = [a_sessPath filesep  '2DGrid_' patID '_Cell_' num2str(aft_matches(cellIndex)) '_ColoredIms'];   
         end
-        
+        filename = [filename '_forPaper'];
 %         print(f, filename, '-dpng', '-r0')
 % 
 %         close all

@@ -133,7 +133,7 @@ c_resp = {};
 
 comparison(:, 1) = strctCELL(:, 1);
 
-for method = [0 1 2 3]
+for method = 3%[0 1 2 3]
     % method = 0;
     compResponses = cell(length(strctCells), 3);
     tic
@@ -322,9 +322,10 @@ sorted_comparison = [l_comp(bl, :); r_comp(br, :)];
 
 f = figure;
 % histogram(cell2mat(sorted_comparison(:, 3)), 50:20:300, 'FaceColor', [0.6350 0.0780 0.1840]);
-histogram(cell2mat(c_resp{1, 4}(:, 2)), 50:20:300, 'FaceColor', [0.6350 0.0780 0.1840]); % poisson latency
+histogram(cell2mat(c_resp{1, 4}(:, 2)), 0:20:300, 'FaceColor', [0.6350 0.0780 0.1840]); % poisson latency
 
-stdErr = std(rL{4})/sqrt(length(rL{4}));
+% stdErr = std(rL{4})/sqrt(length(rL{4}));
+stdErr = std(rL{4});
 
 % ylim([0 60])
 title('Response latency of IT neurons')
@@ -333,9 +334,10 @@ ylabel('No of neurons');
 set(gca, 'FontSize', 14, 'FontWeight', 'bold');
 str = {'Mean = ', [num2str(mean(cell2mat(c_resp{1, 4}(:, 2))),' %.2f') ' +/- ' num2str(stdErr, ' %.2f')]};
 text(200, 100, str, 'Color', 'k', 'FontSize', 13, 'FontWeight', 'bold');
+% xlim = [0 300];
 % filename = [diskPath filesep taskPath filesep 'Hist_RespLat_Method1_2point5StdDev_80offset'];
 filename = [diskPath filesep taskPath filesep 'Hist_SingleTrial_RespLat_Poisson']; % median 131.74ms
-print(f, filename, '-dpng', '-r0')
+print(f, filename, '-dpng', '-r300')
 
 %% histogram of ramp tuned neurons
 
@@ -358,7 +360,7 @@ text(200, 60, str, 'Color', 'k', 'FontSize', 13, 'FontWeight', 'bold');
 
 % filename = [diskPath filesep taskPath filesep 'Hist_RespLat_Method1_2point5StdDev_80offset'];
 filename = [diskPath filesep taskPath filesep 'Hist_SingleTrial_RespLat_Poisson_SigRamp']; % median 130.585ms
-print(f, filename, '-dpng', '-r0')
+% print(f, filename, '-dpng', '-r3000')
 
 %% 
 figure;

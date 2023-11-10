@@ -49,10 +49,10 @@ screenType = 'Object';
 % sig ramp cells
 load([diskPath filesep 'Object_Screening' filesep 'MergedITCells_500Stim_Scrn_SigRamp.mat']); SigCells = true; RespCells = false; layermat = 'fc7'; layerpy = 'IT_output'; stimDir = '500Stimuli'; imageIDs = [1:500]';
 % load([diskPath filesep 'Object_Screening' filesep 'old_cellStructs' filesep 'MergedITCells_500Stim_Scrn_SigRamp.mat']); SigCells = 1; layermat = 'fc7'; layerpy = 'IT_output'; stimDir = '500Stimuli'; imageIDs = [1:500]';
-% layermat = 'comparison'; layerpy = 'comparison_output'; 
+layermat = 'comparison'; layerpy = 'comparison_output'; 
 
 % load([diskPath filesep taskPath filesep 'AllFaceCells_1593_Objects.mat']); FaceCells = 1; layermat = 'fc7'; layerpy = 'IT_output'; stimDir = '201Faces'; imageIDs = [1:201]';
-siphonOffFace = 0;
+siphonOffFace = false;
 
 % siphon off face responses (if  face cells)
 if siphonOffFace
@@ -75,7 +75,7 @@ end
 explainedVar = zeros(length(strctCells), numMdls); % neurons x models
 explainableVar = zeros(length(strctCells), 1);
 
-divideByNoiseCeiling = true;
+divideByNoiseCeiling = false; % don't compute explainable variance if true
 
 %%
 ndim = 50; % number of features to use
@@ -208,9 +208,11 @@ if ~divideByNoiseCeiling
     if strcmp(stimDir, '500Stimuli') && SigCells
         load([diskPath filesep taskPath filesep 'ExV_500Stim_1000Reps_SigRampCells']);
     elseif strcmp(stimDir, '500Stimuli') && RespCells
-        load([diskPath filesep taskPath filesep 'ExV_500Stim_1000Reps_RespCells']);
+        keyboard % haven't recomputed this for 218 cells
+%         load([diskPath filesep taskPath filesep 'ExV_500Stim_1000Reps_RespCells']);
     else
-        % n_reps = 1000 takes 8hrs on laptop for 235 cells
+%       % n_reps = 1000 takes 8hrs on laptop for 235 cells, 2 hr 15 min for on 4 cores for 218
+        % 
         tic
         n_reps = 1000;
         n_cells = length(strctCells);
@@ -245,7 +247,7 @@ if ~divideByNoiseCeiling
     %     save([diskPath filesep taskPath filesep 'ExV_500Stim_1000Reps_RespCells'], 'explainableVar', '-v7.3')
     %
     % elseif exist('SigCells', 'var') && SigCells == 1
-    %     save([diskPath filesep taskPath filesep 'ExV_500Stim_1000Reps_SigRampCells'], 'explainableVar', '-v7.3')
+%         save([diskPath filesep taskPath filesepr 'ExV_500Stim_1000Reps_SigRampCells'], 'explainableVar', '-v7.3')
     %
     % end
     
@@ -262,11 +264,18 @@ end
 
 
 %% 
-% highev = expble_var >= 0.1;
-highnc = (evn > 0.1)';
 
-% tokeep = (highnc + highev)  == 2;
-tokeep = highnc; 
+if divideByNoiseCeiling
+    highnc = (evn > 0.1)';
+    tokeep = highnc;
+else %use both expV and NC
+    highev = expble_var >= 0.1;
+    %     highnc = (evn > 0.1)';
+    %     tokeep = (highnc + highev)  == 2;
+    tokeep = highev;
+
+end
+
 expble_var = expble_var(tokeep);
 explainedVar = explainedVar(tokeep, :, :);
 

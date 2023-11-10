@@ -16,7 +16,7 @@ addpath(genpath('ObjectSpace'))
 screenType = 'Object';
 
 load([diskPath filesep taskPath filesep 'MergedITCells_500Stim_Scrn_SigRamp.mat']); layermat = 'fc7'; layerpy = 'IT_output'; stimDir = '500Stimuli'; imageIDs = [1:500]';
-% layermat = 'comparison'; layerpy = 'comparison_output';
+layermat = 'comparison'; layerpy = 'comparison_output';
 
 if strcmp(layermat, 'comparison') && strcmp(layerpy, 'comparison_output')
     numMdls = 8;
@@ -26,7 +26,7 @@ else
     numLayers = 1;
 end
 
-
+divideByNoiseCeiling = false;
 %% noise ceiling
 
 A = cellfun(@(x) x', psths(:, 1), 'UniformOutput', false);
@@ -66,8 +66,18 @@ for i=1:size(B,1)
     ev00(i)=1-sum(meu(i,num(i,:)>1).^2)/sum((fir(i,num(i,:)>1)-mean(fir(i,num(i,:)>1))).^2);
 end
 evn=ev00;
-% responses = responses(evn > 0.1, :);
 
+if divideByNoiseCeiling
+    responses = responses(evn > 0.1, :);
+    all_strctCells = strctCells;
+    strctCells = strctCells(evn > 0.1);
+else
+    load([diskPath filesep taskPath filesep 'ExV_500Stim_1000Reps_SigRampCells']);
+    expble_var = mean(explainableVar, 2);
+    responses = responses(expble_var > 0.1, :);
+    all_strctCells = strctCells;
+    strctCells = strctCells(expble_var > 0.1);
+end
 %%
 tic
 n_dist = 1; % 51 min for 10 dist 50 dim
@@ -126,9 +136,10 @@ for modelNum = 1:numMdls
             [pred_resp(:, cellIndex), obs_resp(:, cellIndex)] = Utilities.computePredictedResponses(resp, params, imageIDs, screenType, method);
             
         end
-        
-        pred_resp = pred_resp(:, evn > 0.1);
-        obs_resp = obs_resp(:, evn > 0.1);
+%         if divideByNoiseCeiling
+%             pred_resp = pred_resp(:, evn > 0.1);
+%             obs_resp = obs_resp(:, evn > 0.1);
+%         end
         % project prediction onto target and a randomly chosen distractor
         for nd = 1:n_dist
             enc_acc = zeros(length(imageIDs), n_reps);
@@ -237,5 +248,5 @@ else
     set(gca,'FontSize',Fontsize, 'FontWeight', 'bold')
     
 end
-    print(f, filename, '-dpng', '-r0')
+%     print(f, filename, '-dpng', '-r0')
 

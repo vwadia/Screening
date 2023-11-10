@@ -52,11 +52,11 @@ order = repelem([1:500]', 4);
 % m_basePath = [diskPath filesep 'Recall_Task' filesep 'P84CS' filesep 'RecallScreening_Session_1_20230406']; m_subID = 'P84CS_RecScreen_1';
 % a_basePath = [diskPath filesep 'Recall_Task' filesep 'P84CS' filesep 'ReScreenRecall_Session_1_20230406']; a_subID = 'P84CS_ReScreenRecall_1';
 
-% m_basePath = [diskPath filesep 'Object_Screening' filesep 'P85CS' filesep 'ClosedLoopScreening_Session_1_20230419']; m_subID = 'P85CS_1';
-% a_basePath = [diskPath filesep 'Object_Screening' filesep 'P85CS' filesep 'ClosedLoopReScreen_Session_1_20230419']; a_subID = 'P85CS_CL_ReScreen';
+m_basePath = [diskPath filesep 'Object_Screening' filesep 'P85CS' filesep 'ClosedLoopScreening_Session_1_20230419']; m_subID = 'P85CS_1';
+a_basePath = [diskPath filesep 'Object_Screening' filesep 'P85CS' filesep 'ClosedLoopReScreen_Session_1_20230419']; a_subID = 'P85CS_CL_ReScreen';
 
-m_basePath = [diskPath filesep 'Recall_Task' filesep 'P85CS' filesep 'RecallScreening_Session_1_20230424']; m_subID = 'P85CS_RecScreen_1';
-a_basePath = [diskPath filesep 'Recall_Task' filesep 'P85CS' filesep 'ReScreenRecall_Session_1_20230424']; a_subID = 'P85CS_ReScreenRecall';
+% m_basePath = [diskPath filesep 'Recall_Task' filesep 'P85CS' filesep 'RecallScreening_Session_1_20230424']; m_subID = 'P85CS_RecScreen_1';
+% a_basePath = [diskPath filesep 'Recall_Task' filesep 'P85CS' filesep 'ReScreenRecall_Session_1_20230424']; a_subID = 'P85CS_ReScreenRecall';
 
 
 
@@ -134,7 +134,7 @@ a_basePath = [diskPath filesep 'Recall_Task' filesep 'P85CS' filesep 'ReScreenRe
 % 
 % SSIM = 0;
 
-%% load in data - old way individual sessions 
+%% load in data -  individual sessions more flexible
 withRampPValDist = 0;
 
 % Morning -----------------------------------------------------------------
@@ -445,7 +445,7 @@ end
 
 % separate by channel 
 restrictToChannels = 1;
-no_repeats = 0;
+no_repeats = 1;
 
 % without waveform - worse performance after channel restriction
 % [cellPairs, compMat] = Utilities.compareCells(cellMat, cellIDs, restrictToChannels);

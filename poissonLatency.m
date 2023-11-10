@@ -118,40 +118,40 @@ end
 
 
 %% poisson latency function testing 
-respLat = {};
-for cellIndex = 1:length(strctCells)
-     if strcmp(strctCells(cellIndex).SessionID, 'P71CS_Fast')
-        numReps = 6;
-        sortedOrder = order1;
-        labels = catOrd{1};
-        timelimits = [-0.17, 0.33];
-        stimOffDur = 166.6250;
-        stimDur = 166.6250;
-    elseif strcmp(strctCells(cellIndex).SessionID, 'P76CSRec_ReScreen')
-        sortedOrder = order3;
-        labels = catOrd{3};
-        timelimits = [-0.17, 0.33];
-        stimOffDur = 133.4680;
-        stimDur = 266.6250;
-    else
-        numReps = 4;
-        sortedOrder = order2;
-        labels = catOrd{2};
-        timelimits = [-0.17, 0.53]; %changed for all cells Oct2022 vwadia
-        stimOffDur = 133.4680;
-        stimDur = 266.6250;
-     end
-    
-     
-    [respLat{cellIndex, 1}, respLat{cellIndex, 2}] = Utilities.computeRespLatPoisson(psths(cellIndex, :), labels, sortedOrder, timelimits, stimDur, true);
-    
-    respLat{cellIndex, 3} = strctCells(cellIndex).Name;
-    
-end
-
-respCellIds = ~isnan(cell2mat(respLat(:, 1)));
-nonRespCells = strctCells(~respCellIds);
-respCells = strctCells(respCellIds);
+% respLat = {};
+% for cellIndex = 1:length(strctCells)
+%      if strcmp(strctCells(cellIndex).SessionID, 'P71CS_Fast')
+%         numReps = 6;
+%         sortedOrder = order1;
+%         labels = catOrd{1};
+%         timelimits = [-0.17, 0.33];
+%         stimOffDur = 166.6250;
+%         stimDur = 166.6250;
+%     elseif strcmp(strctCells(cellIndex).SessionID, 'P76CSRec_ReScreen')
+%         sortedOrder = order3;
+%         labels = catOrd{3};
+%         timelimits = [-0.17, 0.33];
+%         stimOffDur = 133.4680;
+%         stimDur = 266.6250;
+%     else
+%         numReps = 4;
+%         sortedOrder = order2;
+%         labels = catOrd{2};
+%         timelimits = [-0.17, 0.53]; %changed for all cells Oct2022 vwadia
+%         stimOffDur = 133.4680;
+%         stimDur = 266.6250;
+%      end
+%     
+%      
+%     [respLat{cellIndex, 1}, respLat{cellIndex, 2}] = Utilities.computeRespLatPoisson(psths(cellIndex, :), labels, sortedOrder, timelimits, stimDur, true);
+%     
+%     respLat{cellIndex, 3} = strctCells(cellIndex).Name;
+%     
+% end
+% 
+% respCellIds = ~isnan(cell2mat(respLat(:, 1)));
+% nonRespCells = strctCells(~respCellIds);
+% respCells = strctCells(respCellIds);
 
 %% using p_burst as is
 
@@ -185,18 +185,28 @@ for it = 1:size(exCell, 1)
     % spike timestamps - note that function gets rid of negative numbers
     times = find(exCell(it, :) == 1);
     
+%     if ~isempty(times)
+%         keyboard
+%     end
     % how does one assess significance? - it's inside the function
     % how does one include a given cell's baseline? - start and stop time are used to compute average FR
     % note start time can't be 0
-    startT = -timelimits(1)*1e3+50;
-    endT = (-timelimits(1)*1e3)+stimDur;
+   
 %     [b, e, s] = Utilities.p_burst(times, startT, endT, 0); 
 
+% ----- Current way 09/27/2023
 %     can manually input an average spike rate - per trial works best so far
 %     avgSpikRate = sum(times > -timelimits(1)*1e3 & times < -timelimits(1)*1e3+50)/50; % baseline FR per trial
-    avgSpikRate = sum(times > -timelimits(1)*1e3-50 & times < -timelimits(1)*1e3)/50; % baseline FR per trial
-    [b, e, s] = Utilities.p_burst(times, startT, endT, 0, avgSpikRate); 
-    
+%     avgSpikRate = sum(times > -timelimits(1)*1e3-50 & times < -timelimits(1)*1e3)/50; % baseline FR per trial
+%      startT = -timelimits(1)*1e3+50;
+%     endT = (-timelimits(1)*1e3)+stimDur;
+%     [b, e, s] = Utilities.p_burst(times, startT, endT, 0, avgSpikRate); 
+
+% ------ trying different baseline (just of trial period)
+    startT = -timelimits(1)*1e3;
+    endT = (-timelimits(1)*1e3)+stimDur;
+    [b, e, s] = Utilities.p_burst(times, startT, endT, 0); % if you don't feed in average spike rate it will compute it for you
+
     if ~isempty(b)   
 %         train = times(times > -timelimits(1)*1e3);
         train = times;%(times > -timelimits(1)*1e3);

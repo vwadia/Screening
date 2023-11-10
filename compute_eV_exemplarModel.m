@@ -22,10 +22,10 @@ if strcmp(screenType, 'Object')
     
     imageIDs = [1:500]';
     
-    
+    % gives 500 x 50 matrix of parameters
     load([diskPath filesep 'ObjectSpace' filesep stimDir filesep ['params_Alexnet_' layermat '_' stimDir '.mat']]);
     
-    % set up order (for noise ceiling and exp var computation)
+    % set up order (for noise ceiling and explainable var computation)
     stimDir = '500Stimuli';
     imageIDs = [1:500]';
     order1 = repelem(imageIDs, 6);

@@ -130,7 +130,7 @@ xlabel('STA consistency');
 ylabel('No of neurons');
 set(gca, 'FontSize', 14, 'FontWeight', 'bold');
 % filename = [diskPath filesep taskPath filesep 'STAConsistency_Method_Comparison_MeanValPercell_pythonParams'];
-% print(f, filename, '-dpng', '-r0')
+% print(f, filename, '-dpng', '-r300')
 % close all
 
 %%
@@ -160,7 +160,7 @@ set(gca, 'FontSize', 14, 'FontWeight', 'bold');
 % xlabel('Number of PCs')
 % ylabel('Explained Variance')
 % filename = [diskPath filesep taskPath filesep 'ExpVar_AlexNet_features'];
-% print(f2, filename, '-dpng', '-r0')
+% print(f2, filename, '-dpng', '-r300')
 
 %% grabbing projection values for cells (rank ordered by FR) - for HSU talk
 
@@ -185,7 +185,7 @@ options.reorder = 1; % IMPORTANT have to set this here
 
 % 60/62 = P79 Fingerprint screen - channel 218 cell 1209
 % 155/159 = P81 ClosedLoop rescreen - channel 211 cell 658
-cellIndex = 62; % 60 = P79 Fingerprint screen - channel 218 cell 1209
+cellIndex = 63; % 60 = P79 Fingerprint screen - channel 218 cell 1209
 projVals = Utilities.ObjectSpace.grab_AxisProj_Values(responses{cellIndex, 1}, params, options);
     
 %% Now plot
@@ -193,14 +193,17 @@ f3 = figure;
 hold on
 % color = [0 0.2 0];
 
-scatter(1:20, projVals(end:-1:end-19, 1), 30, [1 0 0], 'filled');    
-scatter(21:40, projVals(20:-1:1, 1), 30, [0 0 1], 'filled') 
-lgnd = legend({'Top stimuli', ' Bottom Stimuli'});
+vals_to_plot_top = projVals(end:-1:end-19, 1);
+vals_to_plot_bottom = projVals(20:-1:1, 1);
+
+scatter(21:40, flipud(vals_to_plot_top), 30, [1 0 0], 'filled');    
+scatter(1:20, flipud(vals_to_plot_bottom), 30, [0 0 1], 'filled') 
+% lgnd = legend({'Top stimuli', ' Bottom Stimuli'});
 xlabel('Stim ID')
 ylabel('Projection Value - Preferred axis')
 set(gca, 'FontSize', 14, 'FontWeight', 'bold');
 filename = [diskPath filesep taskPath filesep 'ProjVals_vs_FR_Top&BottomStim_' num2str(strctCells(cellIndex).ChannelNumber) '_' num2str(strctCells(cellIndex).Name)];
-% print(f3, filename, '-dpng', '-r0')
+print(f3, filename, '-dpng', '-r300')
 
 
 % close all

@@ -12,18 +12,7 @@
 
 % vwadia April2021
 
-dbstop if error
-[~, host] = system('hostname');
-if strcmp(host(1:end-1), 'DWA644201')
-    atCedars = 1;
-    diskPath = 'G:\SUAnalysis';
-elseif strcmp(host(1:end-1), 'DESKTOP-LJHLIED')
-    atCedars = 0;
-    diskPath = 'G:\SUAnalysis';
-elseif strcmp(host(1:end-1), 'Varuns-iMac-2.local')
-    atCedars = 0;
-    diskPath = '/Volumes/T7/SUAnalysis';
-end
+setDiskPaths
 
 load([diskPath filesep 'Object_Screening' filesep 'AllMergedRespITCells_withPDist_Scrn_500Stim'])
 
@@ -279,7 +268,7 @@ xlabel('Face Selectivity Index (FSI)')
 ylabel('Number of cells')
 title('Distribution of FSI Face View Screen March28');
 filename = [basePath filesep 'FSIValueDist_2'];
-print(f, filename, '-dpng', '-r0')
+print(f, filename, '-dpng', '-r300')
 close all
 %%
 
@@ -347,7 +336,7 @@ end
 destPath = basePath;
 filename = [destPath filesep [taskStruct.filePrefix '_sortedFSI']];
 
-print(f,filename ,'-dpng','-r0')
+print(f,filename ,'-dpng','-r300')
 close all
 %% pie chart - inputted manually
 
@@ -375,27 +364,44 @@ pieData = [sigRampCells respCells-sigRampCells Total_merged_cells-respCells];
 %     cats = horzcat(cats, repmat(labels(i), [1 pieData(i)]));
 % end
 %%
+setDiskPaths
 fig = figure; 
 % set(gcf,'Position',get(0,'Screensize'))
 
-colormap bone
-explode = [1 1 1];
+% colormap bone
+explode = [1 1];
 % colormap turbo
 % explode = [1 1 1 1 1];
 
 % labels = {'Faces (26.04%)','Text (5.92%)', 'Plants/fruits (5.33%)' ,'Animals (23.67%)', 'Objects (39.05%)'};
-txt1 = ['Sig Ramp Tuned'  '(' num2str((sigRampCells/Total_merged_cells)*1e2,' %.2f') '%)'];
-txt2 = ['Responsive only' '(' num2str(((respCells-sigRampCells)/Total_merged_cells)*1e2,' %.2f') '%)'];
-txt3 = ['Neither' '(' num2str(((Total_merged_cells-respCells)/Total_merged_cells)*1e2, ' %.2f') '%)'];
+% txt1 = ['Sig Ramp Tuned'  '(' num2str((sigRampCells/Total_merged_cells)*1e2,' %.2f') '%)'];
+% txt2 = ['Responsive only' '(' num2str(((respCells-sigRampCells)/Total_merged_cells)*1e2,' %.2f') '%)'];
+% txt3 = ['Neither' '(' num2str(((Total_merged_cells-respCells)/Total_merged_cells)*1e2, ' %.2f') '%)'];
+% labels = {txt1, txt2, txt3};
 
-labels = {txt1, txt2, txt3};
+% for imagination hand inputted
+% colormap turbo
+% explode = [1 1];
+% pieData = [1019-366 366];
+% txt1 =['Non-active during imagery', ' (' num2str(((1019-366)/1019)*1e2,' %.2f') '%)'];
+% txt2 = ['Active during imagery', ' (' num2str((366/1019)*1e2,' %.2f') '%)'];
+% labels = {txt1, txt2};
 
 pos(1, :) = [0.15864406779661,1.114576271186441,0];
 pos(2, :) = [0.211229540688194,-1.167055515514338,0];
-pos(3, :) = [1.167055515514336,1.032924455942432,0];
+pos(3, :) = [0.15864406779661,1.114576271186441,0];
+% pos(4, :) = [0.211229540688194,-1.167055515514338-1,0];
 
+% pieData = [173-75 44 31];
+% pieData = [451 54];
+pieData = [46 127];
 
-apple = pie(pieData,explode, labels) 
+% 451 - resp neurons merged, 534 - resp neurons unmerged  
+% 597 - total neurons unmerged, estimate 505 - total neurons merged  
+
+% apple = pie(pieData,explode, labels) 
+apple = pie(pieData,explode); 
+% for i = 2:2:length(apple)
 for i = 2:2:length(apple)
     txt = apple(i);
 %     txt.Position = pos(i/2);
@@ -404,10 +410,14 @@ for i = 2:2:length(apple)
 end
 % apple(8).Position = [0.55 1.1 0]; % manual lebal adjustment
 
-% print(fig, [diskPath filesep 'Screening_Resp_Cells_pie_chart'], '-dpng', '-r0')
-% print(fig, [diskPath filesep 'Object_Screening' filesep 'Ramp_cells_pie_chart'], '-dpng', '-r0')
+% print(fig, [diskPath filesep 'Object_Screening' filesep 'Screening_Resp_Cells_pie_chart'], '-dpng', '-r300')
+print(fig, [diskPath filesep 'Recall_Task' filesep 'Im_React_Cells_pie_chart'], '-dpng', '-r300')
+% print(fig, [diskPath filesep 'Object_Screening' filesep 'Ramp_cells_pie_chart'], '-dpng', '-r300')
 % close all
 
+
+% print(fig, [diskPath filesep 'Recall_Task' filesep 'forPaper' filesep 'pieChart_IT_reac'], '-dpng', '-r300')
+% close all
 
 
 
